@@ -1,0 +1,31 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "line-ai-bot",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-09-30",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"vars": {
+		"HF_BASE_URL": "https://router.huggingface.co/v1",
+		"HF_MODEL": "meta-llama/Llama-3.1-8B-Instruct:novita",
+		"SYSTEM_PROMPT": "You are a helpful assistant. Reply in the same language as the user."
+	},
+	"secrets": {
+		"required": [
+			"LINE_CHANNEL_SECRET",
+			"LINE_CHANNEL_ACCESS_TOKEN",
+			"HF_TOKEN",
+			"GITHUB_TOKEN"
+		]
+	},
+	"kv_namespaces": [
+		{
+			"binding": "REPO_STATE",
+			"id": "39e68df7303b4ab6b7ae9c63cbca58be"
+		}
+	],
+	"observability": {
+		"enabled": true
+	}
+}
