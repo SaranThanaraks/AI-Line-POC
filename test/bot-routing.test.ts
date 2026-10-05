@@ -79,3 +79,14 @@ test("ambiguous follow-ups inherit repository mode and prior question", async ()
   assert.match(calls[0], /^github:Previous user question:/);
   assert.match(calls[1], /^repository:Previous user question:/);
 });
+
+test("short-answer follow-ups inherit repository mode", async () => {
+  const { bot, calls } = createBot({
+    ...initialState,
+    lastMode: "repository",
+    lastQuestion: "ช่วย review architecture ของโปรเจกต์",
+  });
+  await bot.createReply("อธิบายสั้นๆ", "line-user");
+  assert.match(calls[0], /Current follow-up: อธิบายสั้นๆ$/);
+  assert.match(calls[1], /Current follow-up: อธิบายสั้นๆ$/);
+});

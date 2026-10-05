@@ -21,6 +21,7 @@ const cases: Array<{
   { message: "วันนี้เป็นไง", expected: "casual" },
   { message: "กินข้าวยัง", expected: "casual" },
   { message: "ชื่ออะไร", expected: "casual" },
+  { message: "คุณคือใคร", expected: "casual" },
   { message: "ช่วยอะไรได้บ้าง", expected: "casual" },
   { message: "JWT คืออะไร", expected: "general", context: selectedRepo },
   { message: "REST กับ GraphQL ต่างกันยังไง", expected: "general", context: selectedRepo },
@@ -67,6 +68,11 @@ const cases: Array<{
     message: "อธิบายเพิ่มหน่อย",
     expected: "general",
     context: { hasSelectedRepository: true, previousMode: "general" },
+  },
+  {
+    message: "อธิบายสั้นๆ",
+    expected: "repository",
+    context: { hasSelectedRepository: true, previousMode: "repository" },
   },
   { message: "1 + 1 ได้อะไร", expected: "out_of_scope", context: selectedRepo },
   {

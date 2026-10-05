@@ -96,6 +96,10 @@ export class IntentRouterService {
       return "ผมเป็น AI Developer Assistant ครับ ตอนนี้กำลังรอช่วยตอบคำถามและวิเคราะห์โค้ดให้คุณอยู่ 😄";
     }
 
+    if (/^(?:คุณคือใคร|เธอคือใคร|who\s+are\s+you)$/.test(normalized)) {
+      return "ผมเป็น AI Developer Assistant บน LINE ครับ ช่วยตอบเรื่อง programming และอ่าน repo เพื่ออธิบาย project, tech stack, business logic รวมถึงแนะนำการแก้โค้ดได้ครับ";
+    }
+
     if (
       /^(?:ทำอะไรได้บ้าง|ช่วยอะไรได้บ้าง|คุณทำอะไรได้บ้าง|แนะนำตัว(?:หน่อย)?|what\s+can\s+you\s+do)$/.test(normalized)
     ) {
@@ -166,7 +170,7 @@ export class IntentRouterService {
 
   private isFollowUp(message: string): boolean {
     if (message.length > 100) return false;
-    return /^(?:แล้ว|แล้วถ้า|แล้วส่วนนี้|ส่วนนี้ล่ะ|ตรงนี้ล่ะ|อันนี้ล่ะ|งั้น|ถ้าอย่างนั้น|ต่อเลย|อธิบายเพิ่ม|ขยายความ|มีทางแก้ไหม|แก้ยังไง|ทำยังไงต่อ|มัน(?:ทำงาน|แก้|ปรับ))/i.test(
+    return /^(?:แล้ว|แล้วถ้า|แล้วส่วนนี้|ส่วนนี้ล่ะ|ตรงนี้ล่ะ|อันนี้ล่ะ|งั้น|ถ้าอย่างนั้น|ต่อเลย|อธิบาย(?:ให้)?(?:เพิ่ม|สั้น|ละเอียด|ง่าย)|สรุป(?:ให้)?สั้น|สั้นกว่านี้|ขยายความ|มีทางแก้ไหม|แก้ยังไง|ทำยังไงต่อ|มัน(?:ทำงาน|แก้|ปรับ))/i.test(
       message.trim(),
     );
   }
