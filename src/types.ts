@@ -32,11 +32,14 @@ export interface LineFlexMessage {
 
 export type LineMessage = LineTextMessage | LineFlexMessage;
 export type LineReply = string | LineMessage | LineMessage[];
+export type AssistantMode = "general" | "repository";
 
 export interface RepoState {
   owner: string;
   repo: string;
   branch: string;
+  lastMode?: AssistantMode;
+  lastQuestion?: string;
 }
 
 export interface GitHubRepository {

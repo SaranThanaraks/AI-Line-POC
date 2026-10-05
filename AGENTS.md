@@ -19,6 +19,7 @@ Run:
 
 ```bash
 npm run check
+npm test
 npm run test:local
 ```
 
@@ -28,6 +29,7 @@ The smoke test requires a running local Worker (`npm run dev`). Changes to Rich 
 
 - Routes and webhook lifecycle: `src/index.ts`
 - Commands and conversational flow: `src/services/bot.service.ts`
+- Intent classification and scope policy: `src/services/intent-router.service.ts`
 - GitHub API and source selection: `src/services/github.service.ts`
 - Model calls and system instructions: `src/services/hugging-face.service.ts`
 - LINE API and signature verification: `src/services/line.service.ts`

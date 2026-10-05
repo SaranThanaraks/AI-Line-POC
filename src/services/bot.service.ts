@@ -6,6 +6,7 @@ import type { GitHubRepository, LineReply, RepoState } from "../types";
 import { errorMessage } from "../utils";
 import { GitHubApiError, GitHubService } from "./github.service";
 import { HuggingFaceService } from "./hugging-face.service";
+import { IntentRouterService } from "./intent-router.service";
 import { RepositoryStateService } from "./repository-state.service";
 
 const GITHUB_BRANCHES_PER_PAGE = 20;
@@ -13,6 +14,8 @@ const NO_CONVERSATION_KEY = "ไม่พบรหัสห้องสนทน
 const NO_REPOSITORIES = "GitHub token นี้ยังเข้าถึง repo ไม่ได้ กรุณาตรวจ Repository access ของ Fine-grained token";
 
 export class BotService {
+  private readonly intentRouter = new IntentRouterService();
+
   constructor(
     private readonly github: GitHubService,
     private readonly ai: HuggingFaceService,
@@ -29,9 +32,6 @@ export class BotService {
     }
     if (userMessage === "/help") return this.helpMessage();
 
-    const casualReply = this.createCasualReply(userMessage);
-    if (casualReply) return casualReply;
-
     const directRepoPrompt = this.extractDirectRepoPrompt(userMessage);
     if (directRepoPrompt && conversationKey) {
       try {
@@ -47,6 +47,11 @@ export class BotService {
 
           if (directRepoPrompt.question) {
             const answer = await this.answerRepositoryQuestion(directRepoPrompt.question, state);
+            await this.repoState.put(conversationKey, {
+              ...state,
+              lastMode: "repository",
+              lastQuestion: directRepoPrompt.question,
+            });
             return `${repository.full_name} (${state.branch})\n\n${answer}`;
           }
           return [
@@ -99,22 +104,32 @@ export class BotService {
       return this.selectBranch(conversationKey, branchCommand[1].trim());
     }
 
-    const generalQuestion = userMessage.match(/^\/ask\s+([\s\S]+)$/i);
-    if (generalQuestion) {
-      return this.answerDeveloperQuestion(generalQuestion[1].trim());
+    const state = conversationKey ? await this.repoState.get(conversationKey) : null;
+    const intent = this.intentRouter.classify(userMessage, {
+      hasSelectedRepository: state !== null,
+      previousMode: state?.lastMode,
+    });
+    if (intent.mode === "casual" || intent.mode === "out_of_scope") {
+      return intent.reply;
     }
 
-    const codeQuestion = userMessage.match(/^\/code\s+([\s\S]+)$/i);
-    const question = codeQuestion?.[1].trim() || userMessage;
-    if (!codeQuestion && !this.shouldUseRepositoryContext(userMessage)) {
-      return this.answerDeveloperQuestion(userMessage);
+    const contextualQuestion = intent.inherited && state?.lastQuestion
+      ? `Previous user question: ${state.lastQuestion}\nCurrent follow-up: ${intent.question}`
+      : intent.question;
+
+    if (intent.mode === "general") {
+      const answer = await this.answerDeveloperQuestion(contextualQuestion);
+      await this.rememberMode(conversationKey, state, "general", contextualQuestion);
+      return answer;
     }
 
-    const state = await this.repoState.require(conversationKey);
-    if (typeof state === "string") return state;
+    if (!conversationKey) return NO_CONVERSATION_KEY;
+    if (!state) return "ยังไม่ได้เลือก repo\nเริ่มด้วย: /repo owner/repository";
 
     try {
-      return await this.answerRepositoryQuestion(question, state);
+      const answer = await this.answerRepositoryQuestion(contextualQuestion, state);
+      await this.rememberMode(conversationKey, state, "repository", contextualQuestion);
+      return answer;
     } catch (error: unknown) {
       console.error("Repository question failed", errorMessage(error));
       if (error instanceof GitHubApiError) {
@@ -139,6 +154,20 @@ export class BotService {
       console.error("Developer question failed", errorMessage(error));
       throw error;
     }
+  }
+
+  private async rememberMode(
+    conversationKey: string | null,
+    state: RepoState | null,
+    mode: "general" | "repository",
+    question: string,
+  ): Promise<void> {
+    if (!conversationKey || !state) return;
+    await this.repoState.put(conversationKey, {
+      ...state,
+      lastMode: mode,
+      lastQuestion: question.slice(-2_000),
+    });
   }
 
   private async listRepositories(): Promise<string> {
@@ -370,75 +399,6 @@ export class BotService {
       }
     }
     return fallback;
-  }
-
-  private createCasualReply(message: string): string | null {
-    const normalized = message
-      .trim()
-      .toLowerCase()
-      .replace(/[!,.?？。]+$/g, "")
-      .trim();
-
-    if (
-      /^(?:สวัสดี|หวัดดี|ดี)(?:ครับ|ค่ะ|คะ|คับ|จ้า|จ๊ะ)?$/.test(normalized) ||
-      /^(?:hi|hello|hey|good\s+(?:morning|afternoon|evening))$/.test(normalized)
-    ) {
-      return [
-        "สวัสดีครับ 👋",
-        "ต้องการดูโค้ด กด “ดู Code ใน Repo” เพื่อเลือกโปรเจกต์ได้เลย",
-        "ถ้าเลือก repo ไว้แล้ว ก็พิมพ์คำถามเกี่ยวกับโค้ดต่อได้ทันทีครับ",
-      ].join("\n");
-    }
-
-    if (
-      /^(?:ขอบคุณ|ขอบใจ)(?:ครับ|ค่ะ|คะ|คับ|จ้า|จ๊ะ)?$/.test(normalized) ||
-      /^(?:thanks|thank\s+you)$/.test(normalized)
-    ) {
-      return "ยินดีครับ 😊 ถ้าต้องการดูโค้ดต่อ พิมพ์คำถามเกี่ยวกับ repo ที่เลือกไว้ได้เลย";
-    }
-
-    return null;
-  }
-
-  private shouldUseRepositoryContext(message: string): boolean {
-    const normalized = message.trim().toLowerCase();
-
-    if (
-      /(?:ระบบ|แอป|application|โปรแกรม|โปรเจกต์|โปรเจค|project|repo|repository|codebase)\s*(?:นี้|ที่เลือก|ปัจจุบัน|current)/i.test(normalized)
-    ) {
-      return true;
-    }
-
-    const asksAboutBusinessLogic =
-      /(?:business\s*logic|logic\s*ธุรกิจ|ลอจิก(?:ทาง)?ธุรกิจ)/i.test(normalized) &&
-      !/(?:คืออะไร|หมายถึงอะไร|what\s+is)/i.test(normalized);
-    if (
-      asksAboutBusinessLogic ||
-      /(?:ส่วนนี้|ตรงนี้|จุดนี้|โค้ดนี้|code\s+นี้|ระบบนี้|โปรเจกต์นี้|project\s+นี้).*(?:ทำงาน|แก้|ปรับ|refactor|optimi[sz]e|review|รีวิว)/i.test(normalized) ||
-      /(?:ควรแก้ตรงไหน|ควรปรับตรงไหน|มีจุดไหน.*(?:แก้|ปรับ|เสี่ยง))/i.test(normalized)
-    ) {
-      return true;
-    }
-
-    if (
-      /(?:โปรเจกต์|โปรเจค|project|repo|repository|codebase|รีโป|เรโป|branch|commit)\s*(?:นี้|นี้มี|ปัจจุบัน|ที่เลือก|current)/i.test(normalized) ||
-      /(?:ใน|ของ|จาก)\s*(?:โปรเจกต์|โปรเจค|project|repo|repository|codebase|รีโป|เรโป|branch|ระบบ)(?:นี้|ที่เลือก)?/i.test(normalized) ||
-      /(?:โค้ด|code|source)\s*(?:ใน|ของ|จาก)\s*(?:โปรเจกต์|โปรเจค|project|repo|repository|ระบบ)/i.test(normalized)
-    ) {
-      return true;
-    }
-
-    if (
-      /(?:ไฟล์|file|โฟลเดอร์|folder|path|directory|endpoint)\s+(?:นี้|ไหน|อะไร|ที่|ใน|ของ)/i.test(normalized) ||
-      /(?:โค้ด|code|source|ฟังก์ชัน|function|method|class|service|controller|module|component)\s*(?:นี้|ชุดนี้|[`'"][^`'"]+[`'"])/i.test(message) ||
-      /(?:ฟังก์ชัน|function|method|class|service|controller|module|component)\s+(?:[a-z][a-z0-9]*[A-Z][A-Za-z0-9]*|[A-Z][A-Za-z0-9]+)/.test(message) ||
-      /[`'][^`'\n]+[`']/.test(message)
-    ) {
-      return true;
-    }
-
-    return /(?:^|\s)(?:[\w.-]+\/)+[\w.-]+(?:\.(?:ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|swift|php|rb|cs|cpp|c|h|html|css|scss|sql|json|ya?ml|toml|md))?(?:\s|$)/i.test(message) ||
-      /\b[a-z][a-z0-9]*[A-Z][A-Za-z0-9]*\b/.test(message);
   }
 
   private helpMessage(): string {

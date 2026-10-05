@@ -101,6 +101,8 @@ Click **Verify**, then enable **Use webhook**.
 /branches
 /branches 2
 /branch feature/example
+/code explain the architecture
+/ask explain JWT
 /help
 ```
 

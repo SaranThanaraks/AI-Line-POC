@@ -4,7 +4,7 @@
 
 ## 1. เป้าหมายของ POC
 
-ระบบนี้ทำให้ผู้ใช้คุยกับ LINE Official Account แล้วเลือก GitHub repository และ branch เพื่อถามคำถามเกี่ยวกับ source code ได้ คำตอบสร้างด้วยโมเดลที่เรียกผ่าน Hugging Face OpenAI-compatible API และ backend ทำงานบน Cloudflare Workers
+ระบบนี้เป็น **AI Developer Assistant บน LINE** ที่เชื่อมกับ GitHub repository เพื่อช่วยนักพัฒนาเข้าใจ ตรวจสอบ และปรับปรุงระบบ ผู้ใช้เลือก repository และ branch แล้วถามเกี่ยวกับ source code ได้ คำตอบสร้างด้วยโมเดลที่เรียกผ่าน Hugging Face OpenAI-compatible API และ backend ทำงานบน Cloudflare Workers ระบบรองรับบทสนทนาสั้นๆ และความรู้ด้าน software แต่ไม่ใช่ chatbot ทั่วไป
 
 ฟังก์ชันที่มีแล้ว:
 
@@ -17,6 +17,8 @@
 - สนทนาทักทาย/ถามไถ่สั้นๆ และตอบคำถาม programming/technology ทั่วไปโดยไม่อ่าน repository พร้อมพากลับเข้าหัวข้อเมื่อเป็นคำขอขนาดใหญ่ที่ไม่เกี่ยวกับงานพัฒนา
 - อธิบายการทำงานและ business logic ของโค้ด, review ความเสี่ยง และเสนอแนวทางแก้/refactor จาก repository context
 - คำถามที่อ้างถึง “ระบบนี้/แอปนี้/โปรเจกต์นี้” เช่น tech stack และ architecture จะอ่าน manifest กับ config ที่เกี่ยวข้องจาก repo
+- ปฏิเสธคำถามนอกขอบเขต เช่น คณิตศาสตร์ทั่วไป อากาศ ร้านอาหาร และงานเขียนสร้างสรรค์ก่อนเรียก AI
+- จำโหมดคำถามล่าสุดเพื่อให้ follow-up เช่น “อธิบายเพิ่ม” ใช้ context เดิมได้
 - จำ repository/branch แยกตาม LINE user, group หรือ room ด้วย Cloudflare KV
 - อ่าน tree ของ repository แล้วเลือกไฟล์ที่เกี่ยวข้องกับคำถาม
 - ส่งบริบทของโค้ดให้ LLM และตอบกลับใน LINE
@@ -34,6 +36,7 @@ LINE Messaging API
 src/index.ts
    |-- LineService: signature, loading, reply API
    |-- BotService: command routing และ orchestration
+   |     |-- IntentRouterService: casual/general/repository/out-of-scope
    |     |-- GitHubService: repositories, branches, tree, file contents
    |     |-- RepositoryStateService: selected repo/branch ใน KV
    |     `-- HuggingFaceService: ส่ง context ไปยัง LLM
@@ -56,6 +59,7 @@ LineAI/
 │       ├── bot.service.ts               # Use cases, commands, natural-language routing
 │       ├── github.service.ts            # GitHub REST API และสร้าง repo context
 │       ├── hugging-face.service.ts       # LLM client
+│       ├── intent-router.service.ts      # แยก casual/general/repository/out-of-scope intent
 │       ├── line.service.ts               # LINE Messaging API client
 │       └── repository-state.service.ts   # Cloudflare KV access
 ├── assets/
@@ -75,6 +79,7 @@ LineAI/
 - `index.ts` ไม่ควรมี business logic
 - API call ของผู้ให้บริการแต่ละรายต้องอยู่ใน service ของตัวเอง
 - `BotService` ตัดสินใจว่า intent ไหนต้องเรียก service ใด
+- `IntentRouterService` ใช้กฎที่ทดสอบได้เพื่อแยกคำถามทั่วไป คำถาม repo, follow-up และคำถามนอกขอบเขต โดยการมี selected repo อย่างเดียวไม่ถือเป็นหลักฐานว่าเป็นคำถาม repo
 - รูปแบบข้อความ LINE ที่ยาวหรือซับซ้อนควรอยู่ใน `presenters`
 - secret ต้องมาจาก environment/Cloudflare secret เท่านั้น
 
@@ -89,6 +94,16 @@ LineAI/
 7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป
 8. `HuggingFaceService` ส่งคำถามทั่วไปหรือคำถามพร้อม repo context ให้โมเดลตาม intent
 9. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply
+
+ลำดับการเลือก intent:
+
+1. คำสั่งและ explicit override (`/ask`, `/code`)
+2. คำทักทาย/ถามไถ่สั้นๆ
+3. คำถามที่มี repo, project, file หรือ symbol anchor
+4. คำถามวิเคราะห์ project เช่น tech stack, architecture, business logic, review และ refactor
+5. follow-up ที่สืบทอดโหมดก่อนหน้าจาก KV
+6. ความรู้ด้าน software ทั่วไป
+7. คำถามนอกขอบเขต ซึ่งตอบข้อความปฏิเสธโดยไม่เรียก GitHub หรือ AI
 
 ค่าจำกัดปัจจุบันอยู่ใน service ที่เกี่ยวข้อง:
 
@@ -290,6 +305,8 @@ Script ใช้ `LINE_CHANNEL_ACCESS_TOKEN` จาก `.env`, สร้าง m
 /branches                ดู branches หน้าแรก
 /branches 2              ดู branches หน้าที่สอง
 /branch feature/example  เลือก branch
+/code คำถาม             บังคับให้อ่าน repo ที่เลือก
+/ask คำถาม              ถามความรู้ software ทั่วไปโดยไม่อ่าน repo
 /help                    แสดงวิธีใช้
 ```
 
@@ -302,7 +319,7 @@ Script ใช้ `LINE_CHANNEL_ACCESS_TOKEN` จาก `.env`, สร้าง m
 เปลี่ยน branch เป็น develop
 ```
 
-Natural-language parser ปัจจุบันเป็น regular expression ไม่ใช่ intent model จึงควรเพิ่ม test ทุกครั้งที่เพิ่มรูปแบบประโยค
+Natural-language parser ปัจจุบันเป็น deterministic rules ไม่ใช่ intent model ทุกครั้งที่เพิ่มรูปแบบประโยคต้องเพิ่ม case ใน `test/intent-router.test.ts` แล้วรัน `npm test`
 
 ## 10. Security ที่ทำแล้ว
 
@@ -367,6 +384,7 @@ Webhook route รองรับ `POST` เท่านั้น การเป
 
 ```bash
 npm run check
+npm test
 npm run dev
 npm run test:local
 npm run deploy
@@ -378,8 +396,11 @@ npm run deploy
 2. เลือก repo จาก carousel
 3. ดูและเปลี่ยน branch
 4. ถามคำถามที่อ้างถึงไฟล์จริง
-5. ทดสอบ private repo
-6. ตรวจว่า Database/UI ตอบว่ายังไม่พร้อมใช้งาน
+5. ถาม project overview, tech stack, architecture, business logic และขอคำแนะนำ refactor
+6. ตรวจว่าคำถาม programming ทั่วไปไม่ส่ง repo context
+7. ตรวจว่าคำถามนอกขอบเขต เช่น `1 + 1 ได้อะไร` ไม่ถูกส่งให้ AI
+8. ทดสอบ private repo
+9. ตรวจว่า Database/UI ตอบว่ายังไม่พร้อมใช้งาน
 
 ## 14. Notes for AI coding agents
 
@@ -389,6 +410,7 @@ npm run deploy
 
 - HTTP route/webhook lifecycle → `src/index.ts`
 - Intent, commands, business flow → `src/services/bot.service.ts`
+- Intent classification และ scope policy → `src/services/intent-router.service.ts`
 - GitHub API/file selection → `src/services/github.service.ts`
 - Prompt/model call → `src/services/hugging-face.service.ts`
 - LINE API/signature/message splitting → `src/services/line.service.ts`
@@ -396,4 +418,4 @@ npm run deploy
 - Flex Message → `src/presenters/repository.presenter.ts`
 - Rich Menu provisioning → `scripts/publish-rich-menu.mjs`
 
-รักษา behavior สำคัญ: signature ต้องตรวจจาก raw body, webhook ต้องตอบเร็วและใช้ `waitUntil`, secret ต้องไม่เข้า source control, repository content ต้องถูกถือเป็น untrusted input และทุกการเปลี่ยนแปลงต้องผ่าน `npm run check` กับ smoke test
+รักษา behavior สำคัญ: signature ต้องตรวจจาก raw body, webhook ต้องตอบเร็วและใช้ `waitUntil`, secret ต้องไม่เข้า source control, repository content ต้องถูกถือเป็น untrusted input และทุกการเปลี่ยนแปลงต้องผ่าน `npm run check`, `npm test` กับ smoke test
