@@ -99,11 +99,22 @@ export class BotService {
       return this.selectBranch(conversationKey, branchCommand[1].trim());
     }
 
+    const generalQuestion = userMessage.match(/^\/ask\s+([\s\S]+)$/i);
+    if (generalQuestion) {
+      return this.answerDeveloperQuestion(generalQuestion[1].trim());
+    }
+
+    const codeQuestion = userMessage.match(/^\/code\s+([\s\S]+)$/i);
+    const question = codeQuestion?.[1].trim() || userMessage;
+    if (!codeQuestion && !this.shouldUseRepositoryContext(userMessage)) {
+      return this.answerDeveloperQuestion(userMessage);
+    }
+
     const state = await this.repoState.require(conversationKey);
     if (typeof state === "string") return state;
 
     try {
-      return await this.answerRepositoryQuestion(userMessage, state);
+      return await this.answerRepositoryQuestion(question, state);
     } catch (error: unknown) {
       console.error("Repository question failed", errorMessage(error));
       if (error instanceof GitHubApiError) {
@@ -119,6 +130,15 @@ export class BotService {
   ): Promise<string> {
     const context = await this.github.buildRepositoryContext(state, question);
     return this.ai.answerRepositoryQuestion(question, context);
+  }
+
+  private async answerDeveloperQuestion(question: string): Promise<string> {
+    try {
+      return await this.ai.answerDeveloperQuestion(question);
+    } catch (error: unknown) {
+      console.error("Developer question failed", errorMessage(error));
+      throw error;
+    }
   }
 
   private async listRepositories(): Promise<string> {
@@ -380,6 +400,41 @@ export class BotService {
     return null;
   }
 
+  private shouldUseRepositoryContext(message: string): boolean {
+    const normalized = message.trim().toLowerCase();
+
+    const asksAboutBusinessLogic =
+      /(?:business\s*logic|logic\s*ธุรกิจ|ลอจิก(?:ทาง)?ธุรกิจ)/i.test(normalized) &&
+      !/(?:คืออะไร|หมายถึงอะไร|what\s+is)/i.test(normalized);
+    if (
+      asksAboutBusinessLogic ||
+      /(?:ส่วนนี้|ตรงนี้|จุดนี้|โค้ดนี้|code\s+นี้|ระบบนี้|โปรเจกต์นี้|project\s+นี้).*(?:ทำงาน|แก้|ปรับ|refactor|optimi[sz]e|review|รีวิว)/i.test(normalized) ||
+      /(?:ควรแก้ตรงไหน|ควรปรับตรงไหน|มีจุดไหน.*(?:แก้|ปรับ|เสี่ยง))/i.test(normalized)
+    ) {
+      return true;
+    }
+
+    if (
+      /(?:โปรเจกต์|โปรเจค|project|repo|repository|codebase|รีโป|เรโป|branch|commit)\s*(?:นี้|นี้มี|ปัจจุบัน|ที่เลือก|current)/i.test(normalized) ||
+      /(?:ใน|ของ|จาก)\s*(?:โปรเจกต์|โปรเจค|project|repo|repository|codebase|รีโป|เรโป|branch|ระบบ)(?:นี้|ที่เลือก)?/i.test(normalized) ||
+      /(?:โค้ด|code|source)\s*(?:ใน|ของ|จาก)\s*(?:โปรเจกต์|โปรเจค|project|repo|repository|ระบบ)/i.test(normalized)
+    ) {
+      return true;
+    }
+
+    if (
+      /(?:ไฟล์|file|โฟลเดอร์|folder|path|directory|endpoint)\s+(?:นี้|ไหน|อะไร|ที่|ใน|ของ)/i.test(normalized) ||
+      /(?:โค้ด|code|source|ฟังก์ชัน|function|method|class|service|controller|module|component)\s*(?:นี้|ชุดนี้|[`'"][^`'"]+[`'"])/i.test(message) ||
+      /(?:ฟังก์ชัน|function|method|class|service|controller|module|component)\s+(?:[a-z][a-z0-9]*[A-Z][A-Za-z0-9]*|[A-Z][A-Za-z0-9]+)/.test(message) ||
+      /[`'][^`'\n]+[`']/.test(message)
+    ) {
+      return true;
+    }
+
+    return /(?:^|\s)(?:[\w.-]+\/)+[\w.-]+(?:\.(?:ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|swift|php|rb|cs|cpp|c|h|html|css|scss|sql|json|ya?ml|toml|md))?(?:\s|$)/i.test(message) ||
+      /\b[a-z][a-z0-9]*[A-Z][A-Za-z0-9]*\b/.test(message);
+  }
+
   private helpMessage(): string {
     return [
       "คำสั่ง GitHub",
@@ -387,9 +442,11 @@ export class BotService {
       "/repo — ดู repo และ branch ปัจจุบัน",
       "/branches [หน้า] — ดูรายชื่อ branch",
       "/branch ชื่อ-branch — เปลี่ยน branch",
+      "/code คำถาม — บังคับให้อ่าน context จาก repo ที่เลือก",
+      "/ask คำถาม — ถามเรื่อง programming ทั่วไปโดยไม่อ่าน repo",
       "/help — ดูคำสั่ง",
       "",
-      "หลังเลือก repo แล้ว พิมพ์คำถามเกี่ยวกับโค้ดได้เลย",
+      "ระบบจะแยกคำถาม programming ทั่วไปออกจากคำถามเกี่ยวกับ repo ให้อัตโนมัติ",
     ].join("\n");
   }
 }

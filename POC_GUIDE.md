@@ -14,6 +14,8 @@
 - รองรับ public และ private repository ตามสิทธิ์ของ `GITHUB_TOKEN`
 - เลือก repository และ branch ด้วยคำสั่งหรือภาษาธรรมชาติ
 - แยกคำทักทายและคำขอบคุณออกจากโหมดอ่าน repository เพื่อไม่ส่ง source code เข้า AI โดยไม่จำเป็น
+- สนทนาทักทาย/ถามไถ่สั้นๆ และตอบคำถาม programming/technology ทั่วไปโดยไม่อ่าน repository พร้อมพากลับเข้าหัวข้อเมื่อเป็นคำขอขนาดใหญ่ที่ไม่เกี่ยวกับงานพัฒนา
+- อธิบายการทำงานและ business logic ของโค้ด, review ความเสี่ยง และเสนอแนวทางแก้/refactor จาก repository context
 - จำ repository/branch แยกตาม LINE user, group หรือ room ด้วย Cloudflare KV
 - อ่าน tree ของ repository แล้วเลือกไฟล์ที่เกี่ยวข้องกับคำถาม
 - ส่งบริบทของโค้ดให้ LLM และตอบกลับใน LINE
@@ -80,11 +82,12 @@ LineAI/
 1. ผู้ใช้เลือก repo จาก carousel หรือพิมพ์ `/repo owner/repository`
 2. `BotService` ขอข้อมูล repo จาก GitHub และบันทึก default branch ลง KV
 3. ผู้ใช้อาจพิมพ์ `/branches` และ `/branch branch-name` เพื่อเปลี่ยน branch
-4. เมื่อส่งคำถามเกี่ยวกับโค้ด `GitHubService` จะโหลด branch, recursive tree และไฟล์ที่เกี่ยวข้อง ส่วนคำทักทาย/ขอบคุณจะตอบทันทีโดยไม่เรียก GitHub หรือ AI API
-5. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์
-6. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป
-7. `HuggingFaceService` ส่ง context กับคำถามให้โมเดล
-8. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply
+4. `BotService` แยกคำถามออกเป็นคำถาม programming ทั่วไปหรือคำถามที่อ้างถึง repo ปัจจุบัน ผู้ใช้บังคับโหมดได้ด้วย `/ask` และ `/code`
+5. สำหรับคำถามเกี่ยวกับ repo `GitHubService` จะโหลด branch, recursive tree และไฟล์ที่เกี่ยวข้อง ส่วนคำทักทาย/ขอบคุณจะตอบทันทีโดยไม่เรียก GitHub หรือ AI API
+6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์
+7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป
+8. `HuggingFaceService` ส่งคำถามทั่วไปหรือคำถามพร้อม repo context ให้โมเดลตาม intent
+9. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply
 
 ค่าจำกัดปัจจุบันอยู่ใน service ที่เกี่ยวข้อง:
 
