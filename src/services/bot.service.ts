@@ -29,6 +29,9 @@ export class BotService {
     }
     if (userMessage === "/help") return this.helpMessage();
 
+    const casualReply = this.createCasualReply(userMessage);
+    if (casualReply) return casualReply;
+
     const directRepoPrompt = this.extractDirectRepoPrompt(userMessage);
     if (directRepoPrompt && conversationKey) {
       try {
@@ -347,6 +350,34 @@ export class BotService {
       }
     }
     return fallback;
+  }
+
+  private createCasualReply(message: string): string | null {
+    const normalized = message
+      .trim()
+      .toLowerCase()
+      .replace(/[!,.?？。]+$/g, "")
+      .trim();
+
+    if (
+      /^(?:สวัสดี|หวัดดี|ดี)(?:ครับ|ค่ะ|คะ|คับ|จ้า|จ๊ะ)?$/.test(normalized) ||
+      /^(?:hi|hello|hey|good\s+(?:morning|afternoon|evening))$/.test(normalized)
+    ) {
+      return [
+        "สวัสดีครับ 👋",
+        "ต้องการดูโค้ด กด “ดู Code ใน Repo” เพื่อเลือกโปรเจกต์ได้เลย",
+        "ถ้าเลือก repo ไว้แล้ว ก็พิมพ์คำถามเกี่ยวกับโค้ดต่อได้ทันทีครับ",
+      ].join("\n");
+    }
+
+    if (
+      /^(?:ขอบคุณ|ขอบใจ)(?:ครับ|ค่ะ|คะ|คับ|จ้า|จ๊ะ)?$/.test(normalized) ||
+      /^(?:thanks|thank\s+you)$/.test(normalized)
+    ) {
+      return "ยินดีครับ 😊 ถ้าต้องการดูโค้ดต่อ พิมพ์คำถามเกี่ยวกับ repo ที่เลือกไว้ได้เลย";
+    }
+
+    return null;
   }
 
   private helpMessage(): string {
