@@ -403,6 +403,12 @@ export class BotService {
   private shouldUseRepositoryContext(message: string): boolean {
     const normalized = message.trim().toLowerCase();
 
+    if (
+      /(?:ระบบ|แอป|application|โปรแกรม|โปรเจกต์|โปรเจค|project|repo|repository|codebase)\s*(?:นี้|ที่เลือก|ปัจจุบัน|current)/i.test(normalized)
+    ) {
+      return true;
+    }
+
     const asksAboutBusinessLogic =
       /(?:business\s*logic|logic\s*ธุรกิจ|ลอจิก(?:ทาง)?ธุรกิจ)/i.test(normalized) &&
       !/(?:คืออะไร|หมายถึงอะไร|what\s+is)/i.test(normalized);

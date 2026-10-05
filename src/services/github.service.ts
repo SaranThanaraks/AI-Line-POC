@@ -120,7 +120,7 @@ export class GitHubService {
     }
 
     return (
-      /\.(c|cc|cpp|cs|css|go|graphql|h|hpp|html|java|js|json|jsx|kt|kts|md|mjs|cjs|php|prisma|py|rb|rs|scss|sh|sql|svelte|swift|toml|ts|tsx|txt|vue|xml|ya?ml)$/i.test(item.path) ||
+      /\.(c|cc|cpp|cs|css|go|graphql|h|hpp|html|java|js|jsonc?|jsx|kt|kts|md|mjs|cjs|php|prisma|py|rb|rs|scss|sh|sql|svelte|swift|toml|ts|tsx|txt|vue|xml|ya?ml)$/i.test(item.path) ||
       /(^|\/)(dockerfile|makefile)$/i.test(item.path)
     );
   }
@@ -144,7 +144,12 @@ export class GitHubService {
           if (basename === token) score += 100;
         }
         if (/^readme(\.[a-z0-9]+)?$/i.test(file.path)) score += 75;
-        if (/^(package\.json|pyproject\.toml|go\.mod|cargo\.toml|composer\.json)$/i.test(file.path)) score += 65;
+        if (/(^|\/)(package\.json|pyproject\.toml|go\.mod|cargo\.toml|composer\.json)$/i.test(file.path)) score += 65;
+        if (
+          /(^|\/)(wrangler\.jsonc?|tsconfig(?:\.[\w-]+)?\.json|vite\.config\.[cm]?[jt]s|next\.config\.[cm]?js|nuxt\.config\.[cm]?ts|docker-compose\.ya?ml)$/i.test(file.path)
+        ) {
+          score += 55;
+        }
         if (/(^|\/)(index|main|app|server|worker)\.(ts|tsx|js|jsx|mjs|py|go|rs|java|kt|swift)$/i.test(file.path)) score += 40;
         score -= Math.min(file.path.split("/").length, 10);
         return { file, score };

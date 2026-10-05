@@ -16,6 +16,7 @@
 - แยกคำทักทายและคำขอบคุณออกจากโหมดอ่าน repository เพื่อไม่ส่ง source code เข้า AI โดยไม่จำเป็น
 - สนทนาทักทาย/ถามไถ่สั้นๆ และตอบคำถาม programming/technology ทั่วไปโดยไม่อ่าน repository พร้อมพากลับเข้าหัวข้อเมื่อเป็นคำขอขนาดใหญ่ที่ไม่เกี่ยวกับงานพัฒนา
 - อธิบายการทำงานและ business logic ของโค้ด, review ความเสี่ยง และเสนอแนวทางแก้/refactor จาก repository context
+- คำถามที่อ้างถึง “ระบบนี้/แอปนี้/โปรเจกต์นี้” เช่น tech stack และ architecture จะอ่าน manifest กับ config ที่เกี่ยวข้องจาก repo
 - จำ repository/branch แยกตาม LINE user, group หรือ room ด้วย Cloudflare KV
 - อ่าน tree ของ repository แล้วเลือกไฟล์ที่เกี่ยวข้องกับคำถาม
 - ส่งบริบทของโค้ดให้ LLM และตอบกลับใน LINE
