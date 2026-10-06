@@ -15,7 +15,6 @@ const files: GitHubTreeItem[] = [
   "src/services/hugging-face.service.ts",
   "src/services/line.service.ts",
   "src/services/repository-state.service.ts",
-  "src/services/intent-router.service.ts",
   "src/utils.ts",
   "test/bot-routing.test.ts",
   "app/page.tsx",

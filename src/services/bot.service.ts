@@ -7,7 +7,6 @@ import { errorMessage } from "../utils";
 import { isCapabilityQuestion } from "../utils/repository-question";
 import { GitHubApiError, GitHubService } from "./github.service";
 import { HuggingFaceService } from "./hugging-face.service";
-import { IntentRouterService } from "./intent-router.service";
 import { RepositoryStateService } from "./repository-state.service";
 
 const GITHUB_BRANCHES_PER_PAGE = 20;
@@ -15,8 +14,6 @@ const NO_CONVERSATION_KEY = "ไม่พบรหัสห้องสนทน
 const NO_REPOSITORIES = "GitHub token นี้ยังเข้าถึง repo ไม่ได้ กรุณาตรวจ Repository access ของ Fine-grained token";
 
 export class BotService {
-  private readonly intentRouter = new IntentRouterService();
-
   constructor(
     private readonly github: GitHubService,
     private readonly ai: HuggingFaceService,
@@ -50,7 +47,6 @@ export class BotService {
             const answer = await this.answerRepositoryQuestion(directRepoPrompt.question, state);
             await this.repoState.put(conversationKey, {
               ...state,
-              lastMode: "repository",
               lastQuestion: directRepoPrompt.question,
             });
             return `${repository.full_name} (${state.branch})\n\n${answer}`;
@@ -106,30 +102,23 @@ export class BotService {
     }
 
     const state = conversationKey ? await this.repoState.get(conversationKey) : null;
-    const intent = this.intentRouter.classify(userMessage, {
-      hasSelectedRepository: state !== null,
-      previousMode: state?.lastMode,
-    });
-    if (intent.mode === "casual" || intent.mode === "out_of_scope") {
-      return intent.reply;
+    const generalOverride = userMessage.match(/^\/ask\s+([\s\S]+)$/i);
+    if (generalOverride) {
+      return this.answerDeveloperQuestion(generalOverride[1].trim());
     }
 
-    const contextualQuestion = intent.inherited && state?.lastQuestion
-      ? `Previous user question: ${state.lastQuestion}\nCurrent follow-up: ${intent.question}`
-      : intent.question;
-
-    if (intent.mode === "general") {
-      const answer = await this.answerDeveloperQuestion(contextualQuestion);
-      await this.rememberMode(conversationKey, state, "general", contextualQuestion);
-      return answer;
+    const repositoryOverride = userMessage.match(/^\/code\s+([\s\S]+)$/i);
+    const question = repositoryOverride?.[1].trim() || userMessage;
+    if (!state) {
+      if (repositoryOverride) {
+        return "ยังไม่ได้เลือก repo\nเริ่มด้วย: /repo owner/repository";
+      }
+      return this.answerDeveloperQuestion(question);
     }
-
-    if (!conversationKey) return NO_CONVERSATION_KEY;
-    if (!state) return "ยังไม่ได้เลือก repo\nเริ่มด้วย: /repo owner/repository";
 
     try {
-      const answer = await this.answerRepositoryQuestion(contextualQuestion, state);
-      await this.rememberMode(conversationKey, state, "repository", contextualQuestion);
+      const answer = await this.answerRepositoryQuestion(question, state);
+      await this.rememberQuestion(conversationKey, state, question);
       return answer;
     } catch (error: unknown) {
       console.error("Repository question failed", errorMessage(error));
@@ -146,7 +135,24 @@ export class BotService {
     question: string,
     state: RepoState,
   ): Promise<string> {
-    const context = await this.github.buildRepositoryContext(state, question);
+    const retrievalQuestion = state.lastQuestion
+      ? [
+          `Previous user question: ${state.lastQuestion}`,
+          `Current user question: ${question}`,
+        ].join("\n")
+      : question;
+    const repositoryContext = await this.github.buildRepositoryContext(
+      state,
+      retrievalQuestion,
+    );
+    const context = state.lastQuestion
+      ? [
+          repositoryContext,
+          "CONVERSATION CONTEXT:",
+          `Previous user question: ${state.lastQuestion}`,
+          "Use it only to resolve a follow-up. The current user question remains authoritative.",
+        ].join("\n")
+      : repositoryContext;
     return this.ai.answerRepositoryQuestion(question, context);
   }
 
@@ -172,16 +178,14 @@ export class BotService {
     return "AI API ตอบไม่สำเร็จชั่วคราวครับ กรุณาลองใหม่ โดย repo และ branch ที่เลือกไว้ยังไม่หาย";
   }
 
-  private async rememberMode(
+  private async rememberQuestion(
     conversationKey: string | null,
     state: RepoState | null,
-    mode: "general" | "repository",
     question: string,
   ): Promise<void> {
     if (!conversationKey || !state) return;
     await this.repoState.put(conversationKey, {
       ...state,
-      lastMode: mode,
       lastQuestion: question.slice(-2_000),
     });
   }
@@ -432,7 +436,7 @@ export class BotService {
       "/ask คำถาม — ถามเรื่อง programming ทั่วไปโดยไม่อ่าน repo",
       "/help — ดูคำสั่ง",
       "",
-      "ระบบจะแยกคำถาม programming ทั่วไปออกจากคำถามเกี่ยวกับ repo ให้อัตโนมัติ",
+      "เมื่อเลือก repo แล้ว AI จะตอบภายใต้ scope ของ repo นั้นโดยอัตโนมัติ",
     ].join("\n");
   }
 }

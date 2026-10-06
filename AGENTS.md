@@ -29,9 +29,9 @@ The smoke test requires a running local Worker (`npm run dev`). Changes to Rich 
 
 - Routes and webhook lifecycle: `src/index.ts`
 - Commands and conversational flow: `src/services/bot.service.ts`
-- Intent classification and scope policy: `src/services/intent-router.service.ts`
+- Commands and routing overrides: `src/services/bot.service.ts`
+- Project scope, safety policy, and model calls: `src/services/hugging-face.service.ts`
 - GitHub API and source selection: `src/services/github.service.ts`
-- Model calls and system instructions: `src/services/hugging-face.service.ts`
 - LINE API and signature verification: `src/services/line.service.ts`
 - Conversation repository state: `src/services/repository-state.service.ts`
 - Flex Message rendering: `src/presenters/repository.presenter.ts`

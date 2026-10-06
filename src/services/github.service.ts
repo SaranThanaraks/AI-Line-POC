@@ -271,7 +271,6 @@ export class GitHubService {
           if (/(^|\/)bot\.service\.(?:ts|js)$/i.test(file.path)) score += 250;
           if (/(^|\/)(?:repository-state|line)\.service\.(?:ts|js)$/i.test(file.path)) score += 210;
           if (/(^|\/)(?:github|hugging-face)\.service\.(?:ts|js)$/i.test(file.path)) score += 170;
-          if (/(^|\/)intent-router\.service\.(?:ts|js)$/i.test(file.path)) score -= 350;
         }
         if (
           isAmbiguousComponentQuestion &&
@@ -462,7 +461,7 @@ export class GitHubService {
       return "Identify the evidenced language/runtime, framework/libraries, hosting/runtime, storage, external APIs, and build/test tooling. Use manifests and configuration as primary evidence. Do not describe only the AI model, repeat tools, or list anything absent from the structured evidence.";
     }
     if (this.isBusinessLogicQuestion(question)) {
-      return "Trace the main user-visible workflow through the entry point, orchestration/domain services, state/storage, and external integrations. Do not explain the question classifier unless the user explicitly asks about classification. Do not invent line numbers because the context has none.";
+      return "Trace the main user-visible workflow through the entry point, orchestration/domain services, state/storage, and external integrations. Do not replace repository analysis with generic definitions. Do not invent line numbers because the context has none.";
     }
     if (this.isProjectOverviewQuestion(question)) {
       return "Explain the product or business purpose, intended users, and primary workflow from README/docs and code. Mention technology only after answering the purpose. Preserve domain output names from the evidence and do not combine adjacent README items into a new feature.";

@@ -13,12 +13,11 @@
 - แสดง repository เป็น LINE Flex Message แบบ carousel
 - รองรับ public และ private repository ตามสิทธิ์ของ `GITHUB_TOKEN`
 - เลือก repository และ branch ด้วยคำสั่งหรือภาษาธรรมชาติ
-- แยกคำทักทายและคำขอบคุณออกจากโหมดอ่าน repository เพื่อไม่ส่ง source code เข้า AI โดยไม่จำเป็น
-- สนทนาทักทาย/ถามไถ่สั้นๆ และตอบคำถาม programming/technology ทั่วไปโดยไม่อ่าน repository พร้อมพากลับเข้าหัวข้อเมื่อเป็นคำขอขนาดใหญ่ที่ไม่เกี่ยวกับงานพัฒนา
+- สนทนาทักทาย/ถามไถ่สั้นๆ และตอบคำถาม programming/technology ได้
 - อธิบายการทำงานและ business logic ของโค้ด, review ความเสี่ยง และเสนอแนวทางแก้/refactor จาก repository context
 - คำถามที่อ้างถึง “ระบบนี้/แอปนี้/โปรเจกต์นี้” เช่น tech stack และ architecture จะอ่าน manifest กับ config ที่เกี่ยวข้องจาก repo
-- ปฏิเสธคำถามนอกขอบเขต เช่น คณิตศาสตร์ทั่วไป อากาศ ร้านอาหาร และงานเขียนสร้างสรรค์ก่อนเรียก AI
-- จำโหมดคำถามล่าสุดเพื่อให้ follow-up เช่น “อธิบายเพิ่ม” ใช้ context เดิมได้
+- ใช้ system prompt กำหนดให้ AI ปฏิเสธคำถามนอกขอบเขต เช่น คณิตศาสตร์ทั่วไป อากาศ ร้านอาหาร และงานเขียนสร้างสรรค์ โดยไม่ต้องมี intent classifier อีกชั้น
+- จำคำถามล่าสุดเพื่อช่วยให้ follow-up เช่น “อธิบายเพิ่ม” มีบริบทต่อเนื่อง
 - จำ repository/branch แยกตาม LINE user, group หรือ room ด้วย Cloudflare KV
 - อ่าน tree ของ repository แล้วเลือกไฟล์ที่เกี่ยวข้องกับคำถาม
 - ส่งบริบทของโค้ดให้ LLM และตอบกลับใน LINE
@@ -36,7 +35,6 @@ LINE Messaging API
 src/index.ts
    |-- LineService: signature, loading, reply API
    |-- BotService: command routing และ orchestration
-   |     |-- IntentRouterService: casual/general/repository/out-of-scope
    |     |-- GitHubService: repositories, branches, tree, file contents
    |     |-- RepositoryStateService: selected repo/branch ใน KV
    |     `-- HuggingFaceService: ส่ง context ไปยัง LLM
@@ -56,10 +54,9 @@ LineAI/
 │   ├── presenters/
 │   │   └── repository.presenter.ts      # Repo list และ Flex carousel
 │   └── services/
-│       ├── bot.service.ts               # Use cases, commands, natural-language routing
+│       ├── bot.service.ts               # Use cases, commands และ routing override
 │       ├── github.service.ts            # GitHub REST API และสร้าง repo context
-│       ├── hugging-face.service.ts       # LLM client
-│       ├── intent-router.service.ts      # แยก casual/general/repository/out-of-scope intent
+│       ├── hugging-face.service.ts       # LLM client, project scope และ safety prompt
 │       ├── line.service.ts               # LINE Messaging API client
 │       └── repository-state.service.ts   # Cloudflare KV access
 ├── assets/
@@ -78,8 +75,8 @@ LineAI/
 
 - `index.ts` ไม่ควรมี business logic
 - API call ของผู้ให้บริการแต่ละรายต้องอยู่ใน service ของตัวเอง
-- `BotService` ตัดสินใจว่า intent ไหนต้องเรียก service ใด
-- `IntentRouterService` ใช้กฎที่ทดสอบได้เพื่อแยกคำถามทั่วไป คำถาม repo, follow-up และคำถามนอกขอบเขต โดยการมี selected repo อย่างเดียวไม่ถือเป็นหลักฐานว่าเป็นคำถาม repo
+- `BotService` จัดการคำสั่งและเลือกเส้นทางจาก state: ถ้ามี selected repo ข้อความปกติจะอ่าน repo เสมอ ถ้าไม่มีก็ถาม AI แบบ software ทั่วไป
+- `HuggingFaceService` เป็นจุดเดียวที่กำหนด project scope, คำขอที่อนุญาต/ปฏิเสธ และกฎไม่เปิดเผย secret
 - รูปแบบข้อความ LINE ที่ยาวหรือซับซ้อนควรอยู่ใน `presenters`
 - secret ต้องมาจาก environment/Cloudflare secret เท่านั้น
 
@@ -88,21 +85,20 @@ LineAI/
 1. ผู้ใช้เลือก repo จาก carousel หรือพิมพ์ `/repo owner/repository`
 2. `BotService` ขอข้อมูล repo จาก GitHub และบันทึก default branch ลง KV
 3. ผู้ใช้อาจพิมพ์ `/branches` และ `/branch branch-name` เพื่อเปลี่ยน branch
-4. `BotService` แยกคำถามออกเป็นคำถาม programming ทั่วไปหรือคำถามที่อ้างถึง repo ปัจจุบัน ผู้ใช้บังคับโหมดได้ด้วย `/ask` และ `/code`
-5. สำหรับคำถามเกี่ยวกับ repo `GitHubService` จะโหลด branch, recursive tree และไฟล์ที่เกี่ยวข้อง ส่วนคำทักทาย/ขอบคุณจะตอบทันทีโดยไม่เรียก GitHub หรือ AI API
+4. เมื่อมี selected repo ข้อความปกติทุกข้อความจะเข้าเส้นทาง repository โดยไม่ผ่าน intent classifier; `/ask` ใช้ข้าม repo และ `/code` ใช้บังคับอ่าน repo
+5. `GitHubService` โหลด branch, recursive tree และไฟล์ที่เกี่ยวข้อง โดยใช้คำถามปัจจุบันกับคำถามก่อนหน้าเป็น retrieval context สำหรับ follow-up
 6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์ โดยคำถามภาพรวม/วัตถุประสงค์จะให้น้ำหนัก `README`, manifest, entry point, route/controller และเอกสาร architecture มากขึ้น
 7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป
-8. `HuggingFaceService` ส่งคำถามทั่วไปหรือคำถามพร้อม repo context ให้โมเดลตาม intent คำตอบเกี่ยวกับ repo ต้องอ้าง path ที่เป็นหลักฐาน แยกข้อเท็จจริงออกจากข้อสันนิษฐาน และห้ามแต่ง feature, role, workflow หรือจำนวน module จากชื่อไฟล์เพียงอย่างเดียว
+8. `HuggingFaceService` ส่งคำถามพร้อม scope prompt ไปยังโมเดล คำตอบเกี่ยวกับ repo ต้องอ้าง path ที่เป็นหลักฐาน แยกข้อเท็จจริงออกจากคำแนะนำ และห้ามแต่งข้อมูลที่ไม่มีใน context
 9. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply
 
 ถ้าผู้ใช้ถามเป็นภาษาไทยแต่โมเดลตอบโดยไม่มีภาษาไทยหรือมีอักษรจีน/ญี่ปุ่น/เกาหลีปน ระบบจะ retry หนึ่งครั้งด้วยข้อกำหนดภาษาแบบเข้มงวด
 
 ### Retrieval และ grounding ที่ใช้จริง
 
-- คำถาม overview ให้น้ำหนัก README และส่งเฉพาะ intro กับ section ที่สื่อ purpose/feature/workflow เพื่อลด setup noise
-- คำถาม tech stack อ่าน `package.json` และ runtime config แล้วสร้างรายการ runtime, framework, tooling, platform และ integrations จากค่าที่ parse ได้โดยตรง
-- คำถาม business logic เลือก entry point, orchestration, state/storage และ integration services; flow ของ LINE POC ที่ยืนยันได้ครบจะ render จากหลักฐานแบบ structured
-- คำถาม component กว้างๆ เช่น `Service ใช้ทำอะไร` จะไม่เดาว่าหมายถึงตัวไหน แต่เสนอ source path ที่เกี่ยวข้องก่อน manifest/config
+- คำถาม overview ให้น้ำหนัก README, manifest และ entry point เพื่อให้โมเดลเห็น purpose/feature/workflow ก่อน setup detail
+- คำถาม tech stack ให้น้ำหนัก `package.json` และ runtime config ส่วน business logic ให้น้ำหนัก entry point, orchestration, state/storage และ integration services
+- คำถาม component กว้างๆ เช่น `Service ใช้ทำอะไร` จะส่งหลักฐานที่เกี่ยวข้องให้โมเดล และ prompt กำหนดให้ถามกลับเมื่อระบุเป้าหมายไม่ได้จริง
 - path จะถูกเพิ่มใน `SELECTED EVIDENCE PATHS` ต่อเมื่อโหลดเนื้อหาไฟล์สำเร็จเท่านั้น path ที่เลือกไว้แต่ fetch ไม่สำเร็จไม่ถือเป็นหลักฐาน
 - GitHub request retry transient network error, HTTP 429 และ 5xx สูงสุด 3 ครั้ง และโหลดไฟล์เป็น batch จำกัด concurrency
 - คำตอบจากโมเดลต้องอ้าง path ใน allowlist, ไม่มี path/เลขบรรทัดแต่ง, ไม่ถูกตัดกลาง, ไม่ยาวหรือซ้ำเกินเกณฑ์ และไม่มี CJK ปนในคำตอบไทย หากไม่ผ่านจะ retry หนึ่งครั้งแล้วใช้ safe fallback
@@ -111,15 +107,14 @@ LineAI/
 
 raw transcript และผล judge อยู่ใน `artifacts/evals/` รอบทดสอบจะให้ tester ยิงคำถามผ่าน `BotService` จริงกับ GitHub/Hugging Face แล้วให้ judge อีก agent ตรวจคำตอบกับ source code โดยไม่แก้โค้ด เกณฑ์ final คือทุกข้ออย่างน้อย 26/30 และต้องไม่มี hallucination, invalid citation, fallback หรือ routing ผิด ดู rubric และประวัติรอบได้ใน `artifacts/evals/README.md`
 
-ลำดับการเลือก intent:
+กฎ routing สนทนามีเพียง:
 
-1. คำสั่งและ explicit override (`/ask`, `/code`)
-2. คำทักทาย/ถามไถ่สั้นๆ
-3. คำถามที่มี repo, project, file หรือ symbol anchor
-4. คำถามวิเคราะห์ project เช่น tech stack, architecture, business logic, review และ refactor
-5. follow-up ที่สืบทอดโหมดก่อนหน้าจาก KV
-6. ความรู้ด้าน software ทั่วไป
-7. คำถามนอกขอบเขต ซึ่งตอบข้อความปฏิเสธโดยไม่เรียก GitHub หรือ AI
+1. จัดการคำสั่ง repository/branch และ explicit override (`/ask`, `/code`)
+2. ถ้ามี selected repo ให้โหลด context แล้วส่งข้อความปกติทุกแบบเข้า project-scoped AI
+3. ถ้าไม่มี selected repo ให้ส่งเข้า software-scoped AI
+4. ให้ system prompt ของ AI ตัดสินใจตอบทักทาย ตอบเรื่อง software/project หรือปฏิเสธคำถามนอกขอบเขต
+
+การให้คะแนน path ภายใน `GitHubService` เป็น retrieval optimization เพื่อเลือกไฟล์ ไม่ใช่ intent gate และไม่ตัดสินว่าผู้ใช้มีสิทธิ์ถามอะไร
 
 ค่าจำกัดปัจจุบันอยู่ใน service ที่เกี่ยวข้อง:
 
@@ -335,9 +330,9 @@ Script ใช้ `LINE_CHANNEL_ACCESS_TOKEN` จาก `.env`, สร้าง m
 เปลี่ยน branch เป็น develop
 ```
 
-Natural-language parser ปัจจุบันเป็น deterministic rules ไม่ใช่ intent model ทุกครั้งที่เพิ่มรูปแบบประโยคต้องเพิ่ม case ใน `test/intent-router.test.ts` แล้วรัน `npm test`
+Natural-language parser ใช้ deterministic rules เฉพาะคำสั่งเลือก repo/branch เท่านั้น ข้อความสนทนาปกติไม่มี intent classifier: เมื่อเลือก repo แล้วทุกข้อความจะเข้า project-scoped AI ส่วน `/ask` ใช้ถามความรู้ software โดยไม่อ่าน repo
 
-คำถามสั้นที่กล่าวถึงส่วนประกอบ เช่น `Service ใช้ทำอะไร` จะเป็นคำถาม repo เมื่อมี repo ถูกเลือก แต่คำถามนิยาม เช่น `Service คืออะไร` ยังเป็นความรู้ programming ทั่วไป ส่วน follow-up เช่น `เป็นระบบใช้ทำอะไร` จะสืบทอดโหมด repo เดิม
+ระบบเก็บ `lastQuestion` เพื่อช่วย retrieval ของ follow-up เช่น `อธิบายเพิ่ม` แต่โมเดลยังต้องตอบคำถามปัจจุบันเป็นหลัก
 
 ## 10. Security ที่ทำแล้ว
 
@@ -418,8 +413,8 @@ npm run deploy
 3. ดูและเปลี่ยน branch
 4. ถามคำถามที่อ้างถึงไฟล์จริง
 5. ถาม project overview, tech stack, architecture, business logic และขอคำแนะนำ refactor
-6. ตรวจว่าคำถาม programming ทั่วไปไม่ส่ง repo context
-7. ตรวจว่าคำถามนอกขอบเขต เช่น `1 + 1 ได้อะไร` ไม่ถูกส่งให้ AI
+6. ตรวจว่าคำถามปกติหลังเลือก repo ถูกตอบโดยอิง repo และ `/ask` ไม่ส่ง repo context
+7. ตรวจว่า AI ปฏิเสธคำถามนอกขอบเขต เช่น `1 + 1 ได้อะไร` โดยไม่คำนวณคำตอบให้
 8. ทดสอบ private repo
 9. ตรวจว่า Database/UI ตอบว่ายังไม่พร้อมใช้งาน
 
@@ -430,8 +425,8 @@ npm run deploy
 จุดแก้หลัก:
 
 - HTTP route/webhook lifecycle → `src/index.ts`
-- Intent, commands, business flow → `src/services/bot.service.ts`
-- Intent classification และ scope policy → `src/services/intent-router.service.ts`
+- Commands, overrides และ conversational flow → `src/services/bot.service.ts`
+- Project scope, safety policy และ model call → `src/services/hugging-face.service.ts`
 - GitHub API/file selection → `src/services/github.service.ts`
 - Prompt/model call → `src/services/hugging-face.service.ts`
 - LINE API/signature/message splitting → `src/services/line.service.ts`

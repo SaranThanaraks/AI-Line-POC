@@ -11,11 +11,12 @@ const initialState: RepoState = {
 
 function createBot(state: RepoState | null = initialState) {
   const calls: string[] = [];
+  const contexts: string[] = [];
   const writes: RepoState[] = [];
   const github = {
     buildRepositoryContext: async (_state: RepoState, question: string) => {
       calls.push(`github:${question}`);
-      return "repository context";
+      return "SELECTED EVIDENCE PATHS:\nREADME.md\nSELECTED FILE CONTENTS:\n--- FILE: README.md ---\nrepository context";
     },
   };
   const ai = {
@@ -23,8 +24,10 @@ function createBot(state: RepoState | null = initialState) {
       calls.push(`general:${question}`);
       return "general answer";
     },
-    answerRepositoryQuestion: async (question: string) => {
+    answerRepositoryQuestion: async (question: string, context: string) => {
       calls.push(`repository:${question}`);
+      contexts.push(context);
+      assert.match(context, /repository context/);
       return "repository answer";
     },
   };
@@ -38,27 +41,87 @@ function createBot(state: RepoState | null = initialState) {
   return {
     bot: new BotService(github as never, ai as never, repoState as never),
     calls,
+    contexts,
     writes,
   };
 }
 
-test("out-of-scope requests never call GitHub or AI", async () => {
-  const { bot, calls, writes } = createBot();
-  const answer = await bot.createReply("1 + 1 ได้อะไร", "line-user");
-  assert.match(answer as string, /ช่วยเฉพาะเรื่อง programming/);
-  assert.deepEqual(calls, []);
+test("all normal messages use the selected repository without intent classification", async () => {
+  for (const question of [
+    "สวัสดี",
+    "โปรเจกต์นี้ทำอะไร",
+    "มี feature อะไรบ้าง",
+    "JWT ใช้ตรงไหน",
+    "1 + 1 ได้อะไร",
+  ]) {
+    const { bot, calls, writes } = createBot();
+    const answer = await bot.createReply(question, "line-user");
+
+    assert.equal(answer, "repository answer");
+    assert.deepEqual(calls, [`github:${question}`, `repository:${question}`]);
+    assert.equal(writes[0].lastQuestion, question);
+    assert.equal("lastMode" in writes[0], false);
+  }
+});
+
+test("messages without a selected repository go directly to scoped general AI", async () => {
+  const { bot, calls, writes } = createBot(null);
+  const answer = await bot.createReply("JWT คืออะไร", "line-user");
+
+  assert.equal(answer, "general answer");
+  assert.deepEqual(calls, ["general:JWT คืออะไร"]);
   assert.deepEqual(writes, []);
 });
 
-test("general developer questions do not send repository context", async () => {
-  const { bot, calls, writes } = createBot();
-  const answer = await bot.createReply("JWT คืออะไร", "line-user");
-  assert.equal(answer, "general answer");
-  assert.deepEqual(calls, ["general:JWT คืออะไร"]);
-  assert.equal(writes[0].lastMode, "general");
+test("out-of-scope messages are sent to AI so the prompt can decline them", async () => {
+  const { bot, calls } = createBot(null);
+  await bot.createReply("1 + 1 ได้อะไร", "line-user");
+  assert.deepEqual(calls, ["general:1 + 1 ได้อะไร"]);
 });
 
-test("AI quota errors return an actionable LINE reply instead of throwing", async () => {
+test("/ask bypasses repository context", async () => {
+  const { bot, calls, writes } = createBot();
+  const answer = await bot.createReply("/ask JWT คืออะไร", "line-user");
+
+  assert.equal(answer, "general answer");
+  assert.deepEqual(calls, ["general:JWT คืออะไร"]);
+  assert.deepEqual(writes, []);
+});
+
+test("/code requires a selected repository", async () => {
+  const { bot, calls } = createBot(null);
+  const answer = await bot.createReply("/code อธิบาย architecture", "line-user");
+
+  assert.match(answer as string, /ยังไม่ได้เลือก repo/);
+  assert.deepEqual(calls, []);
+});
+
+test("/code uses the selected repository", async () => {
+  const { bot, calls } = createBot();
+  const answer = await bot.createReply("/code อธิบาย architecture", "line-user");
+
+  assert.equal(answer, "repository answer");
+  assert.deepEqual(calls, [
+    "github:อธิบาย architecture",
+    "repository:อธิบาย architecture",
+  ]);
+});
+
+test("the previous question is supplied as retrieval context for follow-ups", async () => {
+  const { bot, calls, contexts } = createBot({
+    ...initialState,
+    lastQuestion: "business logic หลักคืออะไร",
+  });
+  await bot.createReply("อธิบายเพิ่มแบบสั้นๆ", "line-user");
+
+  assert.match(calls[0], /^github:Previous user question:/);
+  assert.match(calls[0], /Current user question: อธิบายเพิ่มแบบสั้นๆ$/);
+  assert.equal(calls[1], "repository:อธิบายเพิ่มแบบสั้นๆ");
+  assert.match(contexts[0], /CONVERSATION CONTEXT:/);
+  assert.match(contexts[0], /Previous user question: business logic หลักคืออะไร/);
+});
+
+test("AI quota errors return an actionable LINE reply", async () => {
   const bot = new BotService(
     {} as never,
     {
@@ -68,111 +131,23 @@ test("AI quota errors return an actionable LINE reply instead of throwing", asyn
     } as never,
     { get: async () => null } as never,
   );
+
   const answer = await bot.createReply("JWT คืออะไร", "line-user");
   assert.match(answer as string, /AI API quota/);
   assert.match(answer as string, /Hugging Face/);
 });
 
-test("project questions load repository context", async () => {
-  const { bot, calls, writes } = createBot();
-  const answer = await bot.createReply("ระบบนี้ใช้ tech stack อะไร", "line-user");
-  assert.equal(answer, "repository answer");
-  assert.deepEqual(calls, [
-    "github:ระบบนี้ใช้ tech stack อะไร",
-    "repository:ระบบนี้ใช้ tech stack อะไร",
-  ]);
-  assert.equal(writes[0].lastMode, "repository");
-});
+test("repository AI quota errors return an actionable LINE reply", async () => {
+  const bot = new BotService(
+    { buildRepositoryContext: async () => "context" } as never,
+    {
+      answerRepositoryQuestion: async () => {
+        throw new Error("Hugging Face request failed (429)");
+      },
+    } as never,
+    { get: async () => initialState, put: async () => undefined } as never,
+  );
 
-test("ambiguous follow-ups inherit repository mode and prior question", async () => {
-  const { bot, calls } = createBot({
-    ...initialState,
-    lastMode: "repository",
-    lastQuestion: "business logic หลักคืออะไร",
-  });
-  await bot.createReply("อธิบายเพิ่มหน่อย", "line-user");
-  assert.match(calls[0], /^github:Previous user question:/);
-  assert.match(calls[1], /^repository:Previous user question:/);
-});
-
-test("short-answer follow-ups inherit repository mode", async () => {
-  const { bot, calls } = createBot({
-    ...initialState,
-    lastMode: "repository",
-    lastQuestion: "ช่วย review architecture ของโปรเจกต์",
-  });
-  await bot.createReply("อธิบายสั้นๆ", "line-user");
-  assert.match(calls[0], /Current follow-up: อธิบายสั้นๆ$/);
-  assert.match(calls[1], /Current follow-up: อธิบายสั้นๆ$/);
-});
-
-test("selected repository component questions load code context", async () => {
-  const { bot, calls } = createBot();
-  await bot.createReply("Service ใช้ทำอะไร", "line-user");
-  assert.deepEqual(calls, [
-    "github:Service ใช้ทำอะไร",
-    "repository:Service ใช้ทำอะไร",
-  ]);
-});
-
-test("repository symbol inventory questions keep reading the selected repo", async () => {
-  const { bot, calls, writes } = createBot({
-    ...initialState,
-    lastMode: "repository",
-    lastQuestion: "โปรเจคนี้ทำอะไร",
-  });
-  await bot.createReply("มี function อะไรบ้าง", "line-user");
-  assert.deepEqual(calls, [
-    "github:มี function อะไรบ้าง",
-    "repository:มี function อะไรบ้าง",
-  ]);
-  assert.equal(writes[0].lastMode, "repository");
-});
-
-test("capability synonyms keep reading the selected repo", async () => {
-  for (const question of [
-    "มีฟีเจอร์อะไรบ้าง",
-    "มี feature อะไร",
-    "โปรเจกต์มีคุณสมบัติหลักอะไร",
-    "what capabilities does it have",
-  ]) {
-    const { bot, calls, writes } = createBot({
-      ...initialState,
-      lastMode: "repository",
-      lastQuestion: "ระบบนี้ทำอะไร",
-    });
-    await bot.createReply(question, "line-user");
-    assert.deepEqual(calls, [
-      `github:${question}`,
-      `repository:${question}`,
-    ]);
-    assert.equal(writes[0].lastMode, "repository");
-  }
-});
-
-test("detailed function inventory is not mistaken for a repository-list command", async () => {
-  const { bot, calls } = createBot({
-    ...initialState,
-    lastMode: "repository",
-    lastQuestion: "โปรเจกต์นี้ทำอะไร",
-  });
-  const question = "มี function หลักอะไรบ้างในโปรเจกต์นี้ ขอชื่อ function จริงพร้อมหน้าที่";
-  await bot.createReply(question, "line-user");
-  assert.deepEqual(calls, [
-    `github:${question}`,
-    `repository:${question}`,
-  ]);
-});
-
-test("project-purpose follow-ups stay in repository mode", async () => {
-  const { bot, calls } = createBot({
-    ...initialState,
-    lastMode: "repository",
-    lastQuestion: "Repo นี้เป็นระบบอะไร",
-  });
-  await bot.createReply("เป็นระบบใช้ทำอะไร", "line-user");
-  assert.deepEqual(calls, [
-    "github:เป็นระบบใช้ทำอะไร",
-    "repository:เป็นระบบใช้ทำอะไร",
-  ]);
+  const answer = await bot.createReply("โปรเจกต์นี้ทำอะไร", "line-user");
+  assert.match(answer as string, /มากเกินไปชั่วคราว/);
 });
