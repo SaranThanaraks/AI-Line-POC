@@ -37,6 +37,8 @@ const cases: Array<{
   { message: "ระบบนี้มี feature อะไรบ้าง", expected: "repository", context: selectedRepo },
   { message: "มีฟีเจอร์อะไรบ้าง", expected: "repository", context: selectedRepo },
   { message: "มี feature อะไร", expected: "repository", context: selectedRepo },
+  { message: "โปรเจกต์มีคุณสมบัติหลักอะไร", expected: "repository", context: selectedRepo },
+  { message: "what capabilities does it have", expected: "repository", context: selectedRepo },
   { message: "สรุปโปรเจกต์ให้หน่อย", expected: "repository", context: selectedRepo },
   { message: "Goal ของ line นี้คืออะไร", expected: "repository", context: selectedRepo },
   { message: "entry point อยู่ไหน", expected: "repository", context: selectedRepo },

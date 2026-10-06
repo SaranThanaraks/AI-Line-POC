@@ -409,7 +409,7 @@ test("bare function follow-up means project capabilities unless code symbols are
   }
 });
 
-test("Thai feature question renders project capabilities without calling the model", async () => {
+test("capability synonyms render project capabilities without calling the model", async () => {
   let modelCalls = 0;
   const service = new HuggingFaceService({
     fetch: async () => {
@@ -425,10 +425,17 @@ test("Thai feature question renders project capabilities without calling the mod
     "--- FILE: lib/loanRules.ts ---\nexport function calculateFine() {}",
   ].join("\n\n");
 
-  const answer = await service.answerRepositoryQuestion("มีฟีเจอร์อะไรบ้าง", context);
+  for (const question of [
+    "มีฟีเจอร์อะไรบ้าง",
+    "มี feature อะไร",
+    "โปรเจกต์มีคุณสมบัติหลักอะไร",
+    "what capabilities does it have",
+  ]) {
+    const answer = await service.answerRepositoryQuestion(question, context);
+    assert.match(answer, /ความสามารถของโปรเจกต์|project's capabilities/i);
+    assert.match(answer, /สมัคร\/ล็อกอิน|sign/i);
+  }
   assert.equal(modelCalls, 0);
-  assert.match(answer, /ความสามารถของโปรเจกต์/);
-  assert.match(answer, /สมัคร\/ล็อกอิน/);
 });
 
 test("function inventory is extracted from repository source without model guesses", async () => {

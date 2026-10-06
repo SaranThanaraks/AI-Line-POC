@@ -129,8 +129,13 @@ test("repository symbol inventory questions keep reading the selected repo", asy
   assert.equal(writes[0].lastMode, "repository");
 });
 
-test("Thai and English feature questions keep reading the selected repo", async () => {
-  for (const question of ["มีฟีเจอร์อะไรบ้าง", "มี feature อะไร"]) {
+test("capability synonyms keep reading the selected repo", async () => {
+  for (const question of [
+    "มีฟีเจอร์อะไรบ้าง",
+    "มี feature อะไร",
+    "โปรเจกต์มีคุณสมบัติหลักอะไร",
+    "what capabilities does it have",
+  ]) {
     const { bot, calls, writes } = createBot({
       ...initialState,
       lastMode: "repository",

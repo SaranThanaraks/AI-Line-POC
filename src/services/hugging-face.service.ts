@@ -1,3 +1,5 @@
+import { isCapabilityQuestion as isRepositoryCapabilityQuestion } from "../utils/repository-question";
+
 interface HuggingFaceCompletion {
   choices?: Array<{
     finish_reason?: string | null;
@@ -441,7 +443,7 @@ export class HuggingFaceService {
         "lib/libraryService.ts",
         "lib/loanRules.ts",
       ].filter((path) => evidencePaths.includes(path));
-      return isThai
+      return (isThai
         ? [
             "ถ้าหมายถึงความสามารถของโปรเจกต์ มี 6 กลุ่มหลัก:",
             "1. สมัคร/ล็อกอินสมาชิกและแอดมิน",
@@ -452,8 +454,18 @@ export class HuggingFaceService {
             "6. คำนวณวันครบกำหนด/ค่าปรับและรายงาน overdue",
             `หลักฐาน: ${evidence.map((path) => `\`${path}\``).join(", ")}`,
             "ถ้าต้องการชื่อ code-level function ให้ถามว่า “ขอชื่อ function จริง” ครับ",
-          ].join("\n")
-        : null;
+          ]
+        : [
+            "The project's capabilities fall into 6 main groups:",
+            "1. Member and admin sign-up/sign-in",
+            "2. Browse/search the catalog and add books",
+            "3. Borrow books with overdue, quota, and stock checks",
+            "4. Review current and historical loans",
+            "5. Admin loan search and return recording",
+            "6. Due-date/fine calculation and overdue reporting",
+            `Evidence: ${evidence.map((path) => `\`${path}\``).join(", ")}`,
+            "For code-level symbols, ask for the exact function names.",
+          ]).join("\n");
     }
 
     return null;
@@ -1118,13 +1130,7 @@ export class HuggingFaceService {
   }
 
   private isCapabilityQuestion(message: string): boolean {
-    if (/(?:ชื่อ\s*(?:functions?|ฟังก์ชัน)\s*จริง|code[-\s]*level|symbols?|ในไฟล์|signature|exported)/i.test(message)) {
-      return false;
-    }
-    return (
-      /(?:ทำอะไรได้บ้าง|ความสามารถ|ฟีเจอร์|features?|capabilit(?:y|ies)|รองรับอะไร)/i.test(message) ||
-      /(?:มี|บอก|สรุป)\s*(?:functions?|ฟังก์ชัน)\s*(?:อะไร)?\s*(?:บ้าง|หลัก)?/i.test(message)
-    );
+    return isRepositoryCapabilityQuestion(message);
   }
 
   private isAmbiguousComponentQuestion(message: string): boolean {

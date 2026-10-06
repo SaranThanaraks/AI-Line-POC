@@ -4,6 +4,7 @@ import {
 } from "../presenters/repository.presenter";
 import type { GitHubRepository, LineReply, RepoState } from "../types";
 import { errorMessage } from "../utils";
+import { isCapabilityQuestion } from "../utils/repository-question";
 import { GitHubApiError, GitHubService } from "./github.service";
 import { HuggingFaceService } from "./hugging-face.service";
 import { IntentRouterService } from "./intent-router.service";
@@ -352,6 +353,7 @@ export class BotService {
 
   private isNaturalRepoListRequest(message: string): boolean {
     const lower = message.toLowerCase();
+    if (isCapabilityQuestion(message)) return false;
     if (/(?:functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|features?|ฟีเจอร์|ความสามารถ|business|architecture|code|โค้ด)/i.test(lower)) {
       return false;
     }

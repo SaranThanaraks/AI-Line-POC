@@ -1,4 +1,5 @@
 import type { AssistantMode } from "../types";
+import { isCapabilityQuestion } from "../utils/repository-question";
 
 export type ConversationIntent =
   | { mode: "casual"; reply: string }
@@ -160,6 +161,8 @@ export class IntentRouterService {
     ) {
       return false;
     }
+
+    if (isCapabilityQuestion(message)) return true;
 
     return (
       /(?:service|services|controller|module|component|endpoint|api|worker|function|class|ฟังก์ชัน|คลาส|โมดูล|เซอร์วิส)\s*(?:นี้)?\s*(?:ใช้ทำอะไร|เอาไว้ทำอะไร|ทำหน้าที่อะไร|มีหน้าที่อะไร|ทำอะไร)/i.test(normalized) ||

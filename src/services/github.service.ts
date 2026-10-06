@@ -7,6 +7,7 @@ import type {
   RepoState,
 } from "../types";
 import { errorMessage } from "../utils";
+import { isCapabilityQuestion as isRepositoryCapabilityQuestion } from "../utils/repository-question";
 
 const GITHUB_API_BASE_URL = "https://api.github.com";
 const MAX_TREE_PATHS_IN_PROMPT = 800;
@@ -429,13 +430,7 @@ export class GitHubService {
   }
 
   private isCapabilityQuestion(question: string): boolean {
-    if (/(?:ชื่อ\s*(?:functions?|ฟังก์ชัน)\s*จริง|code[-\s]*level|symbols?|ในไฟล์|signature|exported)/i.test(question)) {
-      return false;
-    }
-    return (
-      /(?:ทำอะไรได้บ้าง|ความสามารถ|ฟีเจอร์|features?|capabilit(?:y|ies)|รองรับอะไร)/i.test(question) ||
-      /(?:มี|บอก|สรุป)\s*(?:functions?|ฟังก์ชัน)\s*(?:อะไร)?\s*(?:บ้าง|หลัก)?/i.test(question)
-    );
+    return isRepositoryCapabilityQuestion(question);
   }
 
   private getRetrievalFocus(question: string, selectedPaths: string[]): string {
@@ -627,7 +622,7 @@ export class GitHubService {
         keywords: ["test", "assert", "acceptance", "happy-flow"],
       },
       {
-        when: /(?:ทำอะไรได้บ้าง|ความสามารถ|ฟีเจอร์|features?|capabilit(?:y|ies)|มี\s*(?:functions?|ฟังก์ชัน))/i,
+        when: /(?:ทำอะไรได้บ้าง|ความสามารถ|คุณสมบัติ|ฟีเจอร์|features?|functionalit(?:y|ies)|capabilit(?:y|ies)|มี\s*(?:functions?|ฟังก์ชัน))/i,
         keywords: ["signupMember", "loginMember", "listBooks", "createBook", "borrowBook", "getMemberLoans", "getAdminLoans", "markLoanReturned"],
       },
       {
