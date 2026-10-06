@@ -90,3 +90,25 @@ test("short-answer follow-ups inherit repository mode", async () => {
   assert.match(calls[0], /Current follow-up: อธิบายสั้นๆ$/);
   assert.match(calls[1], /Current follow-up: อธิบายสั้นๆ$/);
 });
+
+test("selected repository component questions load code context", async () => {
+  const { bot, calls } = createBot();
+  await bot.createReply("Service ใช้ทำอะไร", "line-user");
+  assert.deepEqual(calls, [
+    "github:Service ใช้ทำอะไร",
+    "repository:Service ใช้ทำอะไร",
+  ]);
+});
+
+test("project-purpose follow-ups stay in repository mode", async () => {
+  const { bot, calls } = createBot({
+    ...initialState,
+    lastMode: "repository",
+    lastQuestion: "Repo นี้เป็นระบบอะไร",
+  });
+  await bot.createReply("เป็นระบบใช้ทำอะไร", "line-user");
+  assert.deepEqual(calls, [
+    "github:เป็นระบบใช้ทำอะไร",
+    "repository:เป็นระบบใช้ทำอะไร",
+  ]);
+});

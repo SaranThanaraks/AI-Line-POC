@@ -1,0 +1,10 @@
+Repository answer failed grounding validation [
+  'the answer cites no exact path from SELECTED EVIDENCE PATHS',
+  'the model output was truncated and must be rewritten more concisely',
+  'the answer explains routing or question classification instead of business logic',
+  'the business-logic answer cites no selected entry point, service, route, controller, or store'
+]
+Corrected repository answer failed grounding validation [
+  'the model output was truncated and must be rewritten more concisely',
+  'the answer invents line numbers even though repository context contains no line-number metadata'
+]

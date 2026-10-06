@@ -1,0 +1,224 @@
+{
+  "generatedAt": "2026-10-06T03:32:02.420Z",
+  "runner": "BotService live QA round 13 with GitHubService and HuggingFaceService",
+  "testDesigner": "subagent: answer_tester",
+  "secretsRecorded": false,
+  "results": [
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/AI-Line-POC\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "Repo นี้เป็นระบบอะไร",
+      "answer": "ระบบนี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE: รับ webhook และตรวจสอบลายเซ็น LINE บน Cloudflare Workers, อ่านไฟล์จาก GitHub repo/branch ที่ผู้ใช้เลือก, ส่งบริบทให้ Hugging Face สร้างคำตอบ และจำ repo ที่เลือกไว้ใน Cloudflare KV\n\nหลักฐาน: `README.md`",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/AI-Line-POC@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "README.md",
+        "package.json",
+        "src/index.ts",
+        "tsconfig.json",
+        "wrangler.jsonc",
+        "src/presenters/repository.presenter.ts",
+        "src/services/repository-state.service.ts",
+        "AGENTS.md"
+      ],
+      "evidenceExcerptSha256": {
+        "README.md": "5f6cb3d01d9e0e9be8a02ce95346b340e70274d3dfccc60498e92c528a3edcd5",
+        "package.json": "60009a42f3fecd5b2eead4a5832d85cfc4ee89afe4c8669f6f727db928ac8262",
+        "src/index.ts": "ee3aff8a87fe652a9f5f56fdfae2bd72f9fe81702c5964f6711c541d51910df3",
+        "tsconfig.json": "696b800793f0b7dc1b554386ee19ce2f9ad89a0a24fe6bd5e57cfe18e84a6c7a",
+        "wrangler.jsonc": "621f7f12fbf0f566e983fc79f7b366ed259ee5a29f786b710f44274f61d42026",
+        "src/presenters/repository.presenter.ts": "51da5409ef510afa89660ec1c446dfeedd1f8316dbc01ed157d92818f572904e",
+        "src/services/repository-state.service.ts": "07cb06817e88132faca09f3a716d4dcef7070476b87cda9c745ffdd8c498d12f",
+        "AGENTS.md": "43954ef069be3e21a71ac53d3550ae088a45707e39c4c21a3decb17b1a0d73da"
+      },
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 1517
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/AI-Line-POC\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "เป็นระบบใช้ทำอะไร",
+      "answer": "ระบบนี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE: รับ webhook และตรวจสอบลายเซ็น LINE บน Cloudflare Workers, อ่านไฟล์จาก GitHub repo/branch ที่ผู้ใช้เลือก, ส่งบริบทให้ Hugging Face สร้างคำตอบ และจำ repo ที่เลือกไว้ใน Cloudflare KV\n\nหลักฐาน: `README.md`",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/AI-Line-POC@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "README.md",
+        "package.json",
+        "src/index.ts",
+        "tsconfig.json",
+        "wrangler.jsonc",
+        "AGENTS.md",
+        "POC_GUIDE.md",
+        "scripts/publish-rich-menu.mjs"
+      ],
+      "evidenceExcerptSha256": {
+        "README.md": "5f6cb3d01d9e0e9be8a02ce95346b340e70274d3dfccc60498e92c528a3edcd5",
+        "package.json": "60009a42f3fecd5b2eead4a5832d85cfc4ee89afe4c8669f6f727db928ac8262",
+        "src/index.ts": "ee3aff8a87fe652a9f5f56fdfae2bd72f9fe81702c5964f6711c541d51910df3",
+        "tsconfig.json": "696b800793f0b7dc1b554386ee19ce2f9ad89a0a24fe6bd5e57cfe18e84a6c7a",
+        "wrangler.jsonc": "621f7f12fbf0f566e983fc79f7b366ed259ee5a29f786b710f44274f61d42026",
+        "AGENTS.md": "48ef8e821fe3414ce4202039f47747d6aa9947a30eb1d25dc41f552d73dd3b49",
+        "POC_GUIDE.md": "a388edccc83e3932e8edf3592f692dc284e5b3eb09751be5ddb4271c980abf71",
+        "scripts/publish-rich-menu.mjs": "883b83044904bfa4b49597bebe65f5a79959df1c31ef49b71df693dff60a513c"
+      },
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 1535
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/AI-Line-POC\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "ระบบนี้ใช้ tech stack อะไร",
+      "answer": "Tech stack ที่ยืนยันจาก repo:\n- Runtime: node@>=20 <23\n- Framework/Libraries: express\n- ภาษาและ tooling: typescript, tsx\n- Platform: Cloudflare Workers + Wrangler, Cloudflare KV\n- Integrations: LINE Messaging API, GitHub API, Hugging Face API\nหลักฐาน: `package.json`, `wrangler.jsonc`, `src/index.ts`, `README.md`",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/AI-Line-POC@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "package.json",
+        "tsconfig.json",
+        "wrangler.jsonc",
+        "README.md",
+        "src/index.ts",
+        "AGENTS.md",
+        "POC_GUIDE.md"
+      ],
+      "evidenceExcerptSha256": {
+        "package.json": "60009a42f3fecd5b2eead4a5832d85cfc4ee89afe4c8669f6f727db928ac8262",
+        "tsconfig.json": "696b800793f0b7dc1b554386ee19ce2f9ad89a0a24fe6bd5e57cfe18e84a6c7a",
+        "wrangler.jsonc": "621f7f12fbf0f566e983fc79f7b366ed259ee5a29f786b710f44274f61d42026",
+        "README.md": "5f6cb3d01d9e0e9be8a02ce95346b340e70274d3dfccc60498e92c528a3edcd5",
+        "src/index.ts": "ee3aff8a87fe652a9f5f56fdfae2bd72f9fe81702c5964f6711c541d51910df3",
+        "AGENTS.md": "48ef8e821fe3414ce4202039f47747d6aa9947a30eb1d25dc41f552d73dd3b49",
+        "POC_GUIDE.md": "458052a05a220cc8e3ef6f12d8e72b944e64ba47024393dc402ec733e8d8ba8d"
+      },
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 1621
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/AI-Line-POC\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "business logic หลักคืออะไร",
+      "answer": "ระบบรับคำถามจาก LINE แล้วตอบโดยอิงโค้ดใน GitHub repo และ branch ที่ผู้ใช้เลือกไว้\n1. `src/index.ts` รับ webhook และใช้ `src/services/line.service.ts` ตรวจสอบลายเซ็น LINE ก่อนอ่านข้อความ\n2. `src/services/bot.service.ts` จัดการคำสั่ง/คำถาม และอ่าน repo กับ branch ที่บันทึกใน Cloudflare KV\n3. `src/services/github.service.ts` โหลดไฟล์ที่เกี่ยวข้อง แล้ว `src/services/hugging-face.service.ts` สร้างและตรวจคำตอบกับหลักฐาน\n4. `src/index.ts` ส่งคำตอบกลับผ่าน LINE reply API\nหลักฐาน: `src/index.ts`, `src/services/bot.service.ts`, `src/services/github.service.ts`, `src/services/hugging-face.service.ts`",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/AI-Line-POC@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "src/services/bot.service.ts",
+        "src/services/line.service.ts",
+        "src/services/repository-state.service.ts",
+        "src/index.ts",
+        "src/services/github.service.ts",
+        "src/services/hugging-face.service.ts",
+        "README.md",
+        "package.json"
+      ],
+      "evidenceExcerptSha256": {
+        "src/services/bot.service.ts": "7bf57ffbfb12d08f1607093a37009b223d7a625f2567d0cc31f2250af44d19e1",
+        "src/services/line.service.ts": "8c592c7e92750117da6ec5fb2995f300491ce204d6f49aa4746cfb9325dc66cd",
+        "src/services/repository-state.service.ts": "07cb06817e88132faca09f3a716d4dcef7070476b87cda9c745ffdd8c498d12f",
+        "src/index.ts": "ee3aff8a87fe652a9f5f56fdfae2bd72f9fe81702c5964f6711c541d51910df3",
+        "src/services/github.service.ts": "6ea04cf9b5f91d3e440382f6a86d2a0af79b6a81077bb8bbcb00299a4ebba819",
+        "src/services/hugging-face.service.ts": "8e8f1655660934da81c80219e0f00fdcb20897d271a27e90db186303917ec67d",
+        "README.md": "5f6cb3d01d9e0e9be8a02ce95346b340e70274d3dfccc60498e92c528a3edcd5",
+        "package.json": "5cd1e325a7798a7820dc270f984b982bc23925a2f8b73e79a8990622b373d7d3"
+      },
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 1675
+    },
+    {
+      "repoRequested": "SaranThanaraks/TEST-CMD",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/TEST-CMD\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "Repo นี้เป็นระบบอะไร",
+      "answer": "ระบบนี้เป็นระบบลงทะเบียนงานที่แยกเป็น Next.js สองแอป: ฝั่งผู้ใช้ส่ง ดู และแก้ไขข้อมูลลงทะเบียนพร้อมเอกสาร ส่วนฝั่งแอดมินดูรายการ ดาวน์โหลดเอกสาร และสร้างป้ายชื่อ โดยใช้ API client และ registration store ร่วมกัน\n\nหลักฐาน: `README.md`",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/TEST-CMD@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "README.md",
+        "package.json",
+        "apps/admin/package.json",
+        "apps/user/package.json",
+        "packages/api-client/package.json",
+        "packages/registration-store/package.json",
+        "packages/api-client/src/index.ts",
+        "packages/registration-store/src/index.ts"
+      ],
+      "evidenceExcerptSha256": {
+        "README.md": "c860ab56eda43a904c803cdd23c64a02826fd83978342835edd1d8bc0ff37e3c",
+        "package.json": "85a05492ba08da0330dd6e04a2248cd8d1fcaec57f9ba2b02bb34da632ea2ca8",
+        "apps/admin/package.json": "041ac3fccc9d13771009750b5bf22ab4660fe22ceddbce1d0ad4801957611d98",
+        "apps/user/package.json": "58985b23642e5647c5b80e94e61de52a19c829de1d399545545f9d149d24d350",
+        "packages/api-client/package.json": "538c16c07c3b7d6b89b341ee3bb965fbab0ec7bce7ab01931825b6135eb9d61f",
+        "packages/registration-store/package.json": "6823ea34c5534f04d99195a21138f087370f811054e49b160dab0d148a07da59",
+        "packages/api-client/src/index.ts": "1fbadd021301166ad14dcf1de2c6778d383e28264ab0259c97e7043b2795a311",
+        "packages/registration-store/src/index.ts": "47bf15613b450e5f447894c8ef18d7958ce15a90fcd9feeef0069f689a12b5c0"
+      },
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 1371
+    },
+    {
+      "repoRequested": "SaranThanaraks/TEST-CMD",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/TEST-CMD\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "Service ใช้ทำอะไร",
+      "answer": "ยังไม่พบไฟล์หรือโฟลเดอร์ชื่อ service ที่ชัดเจนในหลักฐานของ repo นี้ครับ\n\nส่วนที่พบและอาจหมายถึง:\n- packages/api-client/src/index.ts\n- packages/registration-store/src/index.ts\n- apps/admin/package.json\n- apps/user/package.json\n- packages/api-client/package.json\n- packages/registration-store/package.json\n\nระบุ path ที่หมายถึง แล้วผมจะอ่านโค้ดและอธิบายหน้าที่ให้ตรงตัวครับ",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/TEST-CMD@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "packages/api-client/src/index.ts",
+        "packages/registration-store/src/index.ts",
+        "README.md",
+        "package.json",
+        "apps/admin/package.json",
+        "apps/user/package.json",
+        "packages/api-client/package.json",
+        "packages/registration-store/package.json",
+        "tsconfig.base.json",
+        "apps/admin/next.config.mjs",
+        "apps/admin/tsconfig.json",
+        "apps/user/next.config.mjs"
+      ],
+      "evidenceExcerptSha256": {
+        "packages/api-client/src/index.ts": "1fbadd021301166ad14dcf1de2c6778d383e28264ab0259c97e7043b2795a311",
+        "packages/registration-store/src/index.ts": "1963d0e80749ce88d6b08aa2923eb5afc0231440d53738fdc21214ef2c4a7122",
+        "README.md": "c860ab56eda43a904c803cdd23c64a02826fd83978342835edd1d8bc0ff37e3c",
+        "package.json": "85a05492ba08da0330dd6e04a2248cd8d1fcaec57f9ba2b02bb34da632ea2ca8",
+        "apps/admin/package.json": "041ac3fccc9d13771009750b5bf22ab4660fe22ceddbce1d0ad4801957611d98",
+        "apps/user/package.json": "58985b23642e5647c5b80e94e61de52a19c829de1d399545545f9d149d24d350",
+        "packages/api-client/package.json": "538c16c07c3b7d6b89b341ee3bb965fbab0ec7bce7ab01931825b6135eb9d61f",
+        "packages/registration-store/package.json": "6823ea34c5534f04d99195a21138f087370f811054e49b160dab0d148a07da59",
+        "tsconfig.base.json": "b0ec5d2cd57c2257383c2b615314c3b004512ca67cfb6192bfd06523c65b8990",
+        "apps/admin/next.config.mjs": "eaf96c4064ae7ef8d8ab01f2378400a4513cd442f1b0ca388941dca858a00bfb",
+        "apps/admin/tsconfig.json": "03893b8621fc0cf49c834db94234ae661e851be999030fe08f96bb831da154a6",
+        "apps/user/next.config.mjs": "eafac60057f2b093a0c22d754917126ab7aa6c7383a7e731479b56f4cd0bc4fe"
+      },
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 2353
+    }
+  ]
+}

@@ -152,6 +152,8 @@ export class IntentRouterService {
     }
 
     return (
+      /(?:service|services|controller|module|component|endpoint|api|worker|function|class|ฟังก์ชัน|คลาส|โมดูล|เซอร์วิส)\s*(?:นี้)?\s*(?:ใช้ทำอะไร|เอาไว้ทำอะไร|ทำหน้าที่อะไร|มีหน้าที่อะไร|ทำอะไร)/i.test(normalized) ||
+      /(?:เป็น)?(?:ระบบ|แอป|application|โปรแกรม|โปรเจกต์|โปรเจค|project|repo|repository)\s*(?:นี้)?\s*(?:เป็นอะไร|ทำอะไร|ใช้ทำอะไร|เอาไว้ทำอะไร|เกี่ยวกับอะไร)/i.test(normalized) ||
       /(?:entry\s*point|จุดเริ่มต้น).*(?:อยู่ไหน|ไฟล์ไหน|ตรงไหน)/i.test(normalized) ||
       /(?:ทำไม|เพราะอะไร).*(?:เลือก|ใช้).*(?:cloudflare|framework|library|database|runtime|worker)/i.test(normalized) ||
       /(?:dependencies?|dependency|แพ็กเกจ|package).*(?:สำคัญ|ใช้อยู่|มีอะไร|ตัวไหน)/i.test(normalized) ||
@@ -170,7 +172,7 @@ export class IntentRouterService {
 
   private isFollowUp(message: string): boolean {
     if (message.length > 100) return false;
-    return /^(?:แล้ว|แล้วถ้า|แล้วส่วนนี้|ส่วนนี้ล่ะ|ตรงนี้ล่ะ|อันนี้ล่ะ|งั้น|ถ้าอย่างนั้น|ต่อเลย|อธิบาย(?:ให้)?(?:เพิ่ม|สั้น|ละเอียด|ง่าย)|สรุป(?:ให้)?สั้น|สั้นกว่านี้|ขยายความ|มีทางแก้ไหม|แก้ยังไง|ทำยังไงต่อ|มัน(?:ทำงาน|แก้|ปรับ))/i.test(
+    return /^(?:แล้ว|แล้วถ้า|แล้วส่วนนี้|ส่วนนี้ล่ะ|ตรงนี้ล่ะ|อันนี้ล่ะ|งั้น|ถ้าอย่างนั้น|ต่อเลย|เป็นระบบใช้ทำอะไร|(?:แล้ว)?มันใช้ทำอะไร|ใช้ทำอะไร|เอาไว้ทำอะไร|สรุปว่าทำอะไร|อธิบาย(?:ให้)?(?:เพิ่ม|สั้น|ละเอียด|ง่าย)|สรุป(?:ให้)?สั้น|สั้นกว่านี้|ขยายความ|มีทางแก้ไหม|แก้ยังไง|ทำยังไงต่อ|มัน(?:ทำงาน|แก้|ปรับ))/i.test(
       message.trim(),
     );
   }

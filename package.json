@@ -14,7 +14,7 @@
     "deploy": "wrangler deploy",
     "richmenu:publish": "node --env-file=.env scripts/publish-rich-menu.mjs",
     "test": "npm run test:intents",
-    "test:intents": "tsx --test test/intent-router.test.ts test/bot-routing.test.ts",
+    "test:intents": "tsx --test test/intent-router.test.ts test/bot-routing.test.ts test/github-selection.test.ts test/hugging-face.service.test.ts",
     "types": "wrangler types",
     "check": "npm run types && tsc --noEmit",
     "test:local": "node --env-file=.env test/local-smoke.mjs"

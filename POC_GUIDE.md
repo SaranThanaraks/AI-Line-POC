@@ -90,10 +90,26 @@ LineAI/
 3. ผู้ใช้อาจพิมพ์ `/branches` และ `/branch branch-name` เพื่อเปลี่ยน branch
 4. `BotService` แยกคำถามออกเป็นคำถาม programming ทั่วไปหรือคำถามที่อ้างถึง repo ปัจจุบัน ผู้ใช้บังคับโหมดได้ด้วย `/ask` และ `/code`
 5. สำหรับคำถามเกี่ยวกับ repo `GitHubService` จะโหลด branch, recursive tree และไฟล์ที่เกี่ยวข้อง ส่วนคำทักทาย/ขอบคุณจะตอบทันทีโดยไม่เรียก GitHub หรือ AI API
-6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์
+6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์ โดยคำถามภาพรวม/วัตถุประสงค์จะให้น้ำหนัก `README`, manifest, entry point, route/controller และเอกสาร architecture มากขึ้น
 7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป
-8. `HuggingFaceService` ส่งคำถามทั่วไปหรือคำถามพร้อม repo context ให้โมเดลตาม intent
+8. `HuggingFaceService` ส่งคำถามทั่วไปหรือคำถามพร้อม repo context ให้โมเดลตาม intent คำตอบเกี่ยวกับ repo ต้องอ้าง path ที่เป็นหลักฐาน แยกข้อเท็จจริงออกจากข้อสันนิษฐาน และห้ามแต่ง feature, role, workflow หรือจำนวน module จากชื่อไฟล์เพียงอย่างเดียว
 9. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply
+
+ถ้าผู้ใช้ถามเป็นภาษาไทยแต่โมเดลตอบโดยไม่มีภาษาไทยหรือมีอักษรจีน/ญี่ปุ่น/เกาหลีปน ระบบจะ retry หนึ่งครั้งด้วยข้อกำหนดภาษาแบบเข้มงวด
+
+### Retrieval และ grounding ที่ใช้จริง
+
+- คำถาม overview ให้น้ำหนัก README และส่งเฉพาะ intro กับ section ที่สื่อ purpose/feature/workflow เพื่อลด setup noise
+- คำถาม tech stack อ่าน `package.json` และ runtime config แล้วสร้างรายการ runtime, framework, tooling, platform และ integrations จากค่าที่ parse ได้โดยตรง
+- คำถาม business logic เลือก entry point, orchestration, state/storage และ integration services; flow ของ LINE POC ที่ยืนยันได้ครบจะ render จากหลักฐานแบบ structured
+- คำถาม component กว้างๆ เช่น `Service ใช้ทำอะไร` จะไม่เดาว่าหมายถึงตัวไหน แต่เสนอ source path ที่เกี่ยวข้องก่อน manifest/config
+- path จะถูกเพิ่มใน `SELECTED EVIDENCE PATHS` ต่อเมื่อโหลดเนื้อหาไฟล์สำเร็จเท่านั้น path ที่เลือกไว้แต่ fetch ไม่สำเร็จไม่ถือเป็นหลักฐาน
+- GitHub request retry transient network error, HTTP 429 และ 5xx สูงสุด 3 ครั้ง และโหลดไฟล์เป็น batch จำกัด concurrency
+- คำตอบจากโมเดลต้องอ้าง path ใน allowlist, ไม่มี path/เลขบรรทัดแต่ง, ไม่ถูกตัดกลาง, ไม่ยาวหรือซ้ำเกินเกณฑ์ และไม่มี CJK ปนในคำตอบไทย หากไม่ผ่านจะ retry หนึ่งครั้งแล้วใช้ safe fallback
+
+### การทดสอบคุณภาพแบบหลาย agent
+
+raw transcript และผล judge อยู่ใน `artifacts/evals/` รอบทดสอบจะให้ tester ยิงคำถามผ่าน `BotService` จริงกับ GitHub/Hugging Face แล้วให้ judge อีก agent ตรวจคำตอบกับ source code โดยไม่แก้โค้ด เกณฑ์ final คือทุกข้ออย่างน้อย 26/30 และต้องไม่มี hallucination, invalid citation, fallback หรือ routing ผิด ดู rubric และประวัติรอบได้ใน `artifacts/evals/README.md`
 
 ลำดับการเลือก intent:
 
@@ -321,11 +337,16 @@ Script ใช้ `LINE_CHANNEL_ACCESS_TOKEN` จาก `.env`, สร้าง m
 
 Natural-language parser ปัจจุบันเป็น deterministic rules ไม่ใช่ intent model ทุกครั้งที่เพิ่มรูปแบบประโยคต้องเพิ่ม case ใน `test/intent-router.test.ts` แล้วรัน `npm test`
 
+คำถามสั้นที่กล่าวถึงส่วนประกอบ เช่น `Service ใช้ทำอะไร` จะเป็นคำถาม repo เมื่อมี repo ถูกเลือก แต่คำถามนิยาม เช่น `Service คืออะไร` ยังเป็นความรู้ programming ทั่วไป ส่วน follow-up เช่น `เป็นระบบใช้ทำอะไร` จะสืบทอดโหมด repo เดิม
+
 ## 10. Security ที่ทำแล้ว
 
 - ตรวจ HMAC-SHA256 ของ LINE webhook จาก raw body ก่อน parse JSON
 - ไม่เก็บ token ใน repository
 - จำกัด timeout ของ LINE loading, GitHub และ LLM requests
+- retry/backoff สำหรับ GitHub transient network error, HTTP 429 และ 5xx
+- ไม่ถือ path เป็นหลักฐานจนกว่าจะโหลด file content สำเร็จ
+- ตรวจ path allowlist, output truncation, ความยาว, CJK และเลขบรรทัดก่อนส่งคำตอบเกี่ยวกับ repo
 - จำกัดจำนวนและขนาด source files ที่อ่าน
 - บอกโมเดลให้ถือว่า repository content เป็น untrusted data และไม่ทำตามคำสั่งในไฟล์
 - GitHub integration ใช้สิทธิ์ read-only ตามหลัก least privilege
@@ -334,7 +355,7 @@ Natural-language parser ปัจจุบันเป็น deterministic rules
 
 - เพิ่ม webhook event deduplication ด้วย `webhookEventId`
 - เพิ่ม structured logging, request ID และ latency metrics
-- เพิ่ม retry/backoff สำหรับ transient upstream failures
+- เพิ่ม retry/backoff สำหรับ LINE และ AI upstream failures (GitHub ทำแล้ว)
 - เพิ่ม rate limiting และ quota ต่อ user/conversation
 - เพิ่ม secret rotation และ runbook
 - เพิ่ม unit/integration tests ของ command routing และ GitHub failures

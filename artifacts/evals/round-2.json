@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-10-05T09:53:50.729Z",
+  "runner": "BotService live QA round 2 with GitHubService and HuggingFaceService",
+  "testDesigner": "subagent: answer_tester",
+  "secretsRecorded": false,
+  "results": [
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "branch": "main",
+      "question": "Repo นี้เป็นระบบอะไร",
+      "answer": "ระบบนี้คือ LINE AI Code Reader — POC (Proof of Concept) ซึ่งเป็นระบบ AI Developer Assistant บน LINE ที่เชื่อมกับ GitHub repository เพื่อช่วยนักพัฒนาเข้าใจ ตรวจสอบ และปรับปรุงระบบ ผู้ใช้เลือก repository และ branch แล้วถามเกี่ยวกับ source code ได้ คำตอบสร้างด้วยโมเดลที่เรียกผ่าน Hugging Face OpenAI-compatible API และ backend ทำงานบน Cloudflare Workers ระบบรองรับบทสนทนาสั้นๆ และความรู้ด้าน software แต่ไม่ใช่ chatbot ทั่วไป\n\nหลักการทำงานของระบบนี้คือ:\n\n1. ผู้ใช้เลือก repo จาก carousel หรือพิมพ์ `/repo owner/repository`\n2. `BotService` ขอข้อมูล repo จาก GitHub และบันทึก default branch ลง KV\n3. ผู้ใช้อาจพิมพ์ `/branches` และ `/branch branch-name` เพื่อเปลี่ยน branch\n4. `BotService` แยกคำถามออกเป็นคำถาม programming ทั่วไปหรือคำถามที่อ้างถึง repo ปัจจุบัน ผู้ใช้บังคับโหมดได้ด้วย `/ask` และ `/code`\n5. สำหรับคำถามเกี่ยวกับ repo `GitHubService` จะโหลด branch, recursive tree และไฟล์ที่เกี่ยวข้อง ส่วนคำทักทาย/ขอบคุณจะตอบทันทีโดยไม่เรียก GitHub หรือ AI API\n6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์\n7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป\n8. `HuggingFaceService` ส่งคำถามทั่วไปหรือคำถามพร้อม repo context ให้โมเดลตาม intent\n9. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply\n\nระบบนี้รองรับ natural-language parser ที่ deterministic rules ไม่ใช่ intent model ทุกครั้งที่เพิ่มรูปแบบประโยคต้องเพิ่ม case ใน `test/intent-router.test.ts` แล้วรัน `npm test`\n\nหลักการแบ่ง responsibility:\n\n- `index.ts` ไม่ควรมี business logic\n- API call ของผู้ให้บริการแต่ละรายต้องอยู่ใน service ของตัวเอง\n- `BotService` ตัดสินใจว่า intent ไหนต้องเรียก service ใด\n- `IntentRouterService` ใช้กฎที่ทดสอบได้เพื่อแยกคำถามทั่วไป คำถาม repo, follow-up และคำถามนอกขอบเขต โดยการมี selected repo อย่างเดียวไม่ถือเป็นหลักฐานว่าเป็นคำถาม repo\n- รูปแบบข้อความ LINE ที่ยาวหรือซับซ้อนควรอยู่ใน `presenters`\n- secret ต้องมาจาก environment/Cloudflare secret เท่านั้น\n\nหลักฐาน: `README.md`, `POC_GUIDE.md`, `src/index.ts`, `src/services/bot.service.ts`, `src/services/github.service.ts`, `src/services/hugging-face.service.ts`, `src/services/intent-router.service.ts`, `src/services/line.service.ts`, `src/services/repository-state.service.ts`, `src/types.ts`, `src/utils.ts`",
+      "selectedEvidencePaths": ["README.md", "package.json", "src/index.ts", "tsconfig.json", "wrangler.jsonc", "src/presenters/repository.presenter.ts", "src/services/repository-state.service.ts", "AGENTS.md", "POC_GUIDE.md", "scripts/publish-rich-menu.mjs", "src/types.ts", "src/utils.ts"],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 24868
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "branch": "main",
+      "question": "เป็นระบบใช้ทำอะไร",
+      "answer": "ระบบนี้เป็น **AI Developer Assistant บน LINE** ที่เชื่อมกับ GitHub repository เพื่อช่วยนักพัฒนาเข้าใจ ตรวจสอบ และปรับปรุงระบบ ผู้ใช้เลือก repository และ branch แล้วถามเกี่ยวกับ source code ได้ คำตอบสร้างด้วยโมเดลที่เรียกผ่าน Hugging Face OpenAI-compatible API และ backend ทำงานบน Cloudflare Workers ระบบรองรับบทสนทนาสั้นๆ และความรู้ด้าน software แต่ไม่ใช่ chatbot ทั่วไป\n\nระบบนี้มีจุดมุ่งหมายเพื่อช่วยให้นักพัฒนาเข้าใจและปรับปรุงระบบของตนเองได้อย่างมีประสิทธิภาพ โดยใช้ AI เพื่อช่วยในการตอบคำถามและให้คำแนะนำเกี่ยวกับโค้ดและระบบ\n\nระบบนี้มี features ต่อไปนี้:\n\n* รับ LINE webhook และตรวจ `x-line-signature`\n* แสดง loading animation ระหว่างประมวลผลในห้องแชตแบบ 1:1\n* แสดง repository เป็น LINE Flex Message แบบ carousel\n* รองรับ public และ private repository ตามสิทธิ์ของ `GITHUB_TOKEN`\n* เลือก repository และ branch ด้วยคำสั่งหรือภาษาธรรมชาติ\n* แยกคำถามออกเป็นคำถาม programming ทั่วไปหรือคำถามที่อ้างถึง repo ปัจจุบัน\n* ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์\n* context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป\n* `HuggingFaceService` ส่งคำถามทั่วไปหรือคำถามพร้อม repo context ให้โมเดลตาม intent\n* `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply\n\nระบบนี้ใช้ Hugging Face เป็น **AI API provider** ไม่ใช่ส่วนที่ผูกตายกับ LINE หรือ GitHub โดย `HuggingFaceService` ส่ง request แบบ OpenAI-compatible ไปที่:\n\n```text\nPOST {HF_BASE_URL}/chat/completions\nAuthorization: Bearer {HF_TOKEN}\nModel: {HF_MODEL}\n```\n\nสร้าง Hugging Face token จากหน้า Access Tokens โดยสร้าง token แยกสำหรับแอปนี้และให้สิทธิ์ `Make calls to Inference Providers` จากนั้นตั้ง model และ base URL ใน `.env` สำหรับ local และ `wrangler.jsonc`/Worker secret สำหรับ production\n\nหลักฐาน:\n\n* `README.md`\n* `POC_GUIDE.md`\n* `AGENTS.md`\n* `src/index.ts`\n* `src/services/hugging-face.service.ts`\n* `src/types.ts`\n* `test/intent-router.test.ts`\n\nการไหลของคำถามเกี่ยวกับโค้ด:\n\n1. ผู้ใช้เลือก repo จาก carousel หรือพิมพ์ `/repo owner/repository`\n2. `BotService` ขอข้อมูล repo จาก GitHub และบันทึก default branch ลง KV\n3. ผู้ใช้อาจพิมพ์ `/branches` และ `/branch branch-name` เพื่อเปลี่ยน branch\n4. `BotService` แยกคำถามออกเป็นคำถาม programming ทั่วไปหรือคำถามที่อ้างถึง repo ปัจจุบัน\n5. สำหรับคำถามเกี่ยวกับ repo `GitHubService` จะโหลด branch, recursive tree และไฟล์ที่เกี่ยวข้อง\n6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์\n7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป\n8. `HuggingFaceService` ส่งคำถามทั่วไปหรือคำถามพร้อม repo context ให้โมเดลตาม intent\n9. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply\n\nลำดับการเลือก intent:\n\n1. คำสั่งและ explicit override (`/ask`, `/code`)\n2. คำทักทาย/ถามไถ่สั้นๆ\n3. คำถามที่มี repo, project, file หรือ symbol anchor\n4. คำถามวิเคราะห์ project เช่น tech stack, architecture, business logic, review และ refactor\n5. follow-up ที่สืบทอดโหมดก่อนหน้าจาก KV\n6. ความรู้ด้าน software ทั่วไป\n7. คำถามนอกข",
+      "selectedEvidencePaths": ["README.md", "package.json", "src/index.ts", "tsconfig.json", "wrangler.jsonc", "AGENTS.md", "POC_GUIDE.md", "scripts/publish-rich-menu.mjs", "src/types.ts", "src/utils.ts", "test/bot-routing.test.ts", "test/intent-router.test.ts"],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 8919,
+      "transcriptNote": "The model response itself ended mid-sentence at the max token limit; the answer above is the exact received text."
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "branch": "main",
+      "question": "ระบบนี้ใช้ tech stack อะไร",
+      "answer": "ภาษาและ runtime ที่ใช้ในการพัฒนาโปรเจ็กต์ AI-Line-POC คือ JavaScript และ Node.js ตามที่ระบุไว้ใน `package.json` โดยใช้ Node.js เวอร์ชัน 20–22\n\nframework และ libraries ที่ใช้ในการพัฒนาโปรเจ็กต์ AI-Line-POC คือ:\n\n* Express.js สำหรับการสร้างเว็บแอปพลิเคชัน\n* Cloudflare Workers สำหรับการสร้างเว็บแอปพลิเคชันบนคลาวด์\n* Wrangler สำหรับการจัดการ Cloudflare Workers\n* TypeScript สำหรับการพัฒนาโค้ดที่มีคุณภาพสูง\n* Hugging Face สำหรับการใช้โมเดล AI\n\nhosting และ runtime ที่ใช้ในการพัฒนาโปรเจ็กต์ AI-Line-POC คือ:\n\n* Cloudflare Workers สำหรับการสร้างเว็บแอปพลิเคชันบนคลาวด์\n* Node.js เวอร์ชัน 20–22 สำหรับการรันโค้ด\n\nstorage ที่ใช้ในการพัฒนาโปรเจ็กต์ AI-Line-POC คือ:\n\n* Cloudflare KV สำหรับการจัดเก็บข้อมูล\n* GitHub สำหรับการจัดเก็บโค้ด\n\nexternal APIs ที่ใช้ในการพัฒนาโปรเจ็กต์ AI-Line-POC คือ:\n\n* LINE Messaging API สำหรับการส่งและรับข้อความ\n* Hugging Face สำหรับการใช้โมเดล AI\n* GitHub API สำหรับการจัดเก็บโค้ด\n\nbuild และ test tooling ที่ใช้ในการพัฒนาโปรเจ็กต์ AI-Line-POC คือ:\n\n* npm สำหรับการจัดการแพ็คเกจ\n* yarn สำหรับการจัดการแพ็คเกจ\n* TypeScript สำหรับการพัฒนาโค้ดที่มีคุณภาพสูง\n* Jest สำหรับการทดสอบโค้ด\n* Mocha สำหรับการทดสอบโค้ด\n* Chai สำหรับการทดสอบโค้ด\n\nหลักฐาน:\n\n* `package.json`\n* `tsconfig.json`\n* `wrangler.jsonc`\n* `README.md`\n* `src/index.ts`\n* `src/presenters/repository.presenter.ts`\n* `src/services/bot.service.ts`\n* `src/services/github.service.ts`\n* `src/services/hugging-face.service.ts`\n* `src/services/intent-router.service.ts`\n* `src/services/line.service.ts`\n* `src/services/repository-state.service.ts`\n* `src/types.ts`\n* `src/utils.ts`\n* `test/bot-routing.test.ts`\n* `test/intent-router.test.ts`\n* `test/local-smoke.mjs`\n* `tsconfig.json`\n* `wrangler.jsonc`\n\nการวิเคราะห์:\n\nโปรเจ็กต์ AI-Line-POC เป็นโปรเจ็กต์ที่ใช้ Node.js และ Cloudflare Workers เพื่อสร้างเว็บแอปพลิเคชันบนคลาวด์ โปรเจ็กต์นี้ใช้ Express.js สำหรับการสร้างเว็บแอปพลิเคชัน และ Wrangler สำหรับการจัดการ Cloudflare Workers โปรเจ็กต์นี้ยังใช้ TypeScript สำหรับการพัฒนาโค้ดที่มีคุณภาพสูง และ Hugging Face สำหรับการใช้โมเดล AI\n\nโปรเจ็กต์นี้มีการใช้ Cloudflare KV สำหรับการจัดเก็บข้อมูล และ GitHub สำหรับการจัดเก็บโค้ด โปรเจ็กต์นี้ยังใช้ LINE Messaging API สำหรับการส่งและรับข้อความ และ Hugging Face สำหรับการใช้โมเดล AI\n\nโปรเจ็กต์นี้มีการใช้ npm สำหรับการจัดการแพ็คเกจ และ yarn สำหรับการจัดการแพ็คเกจ โปรเจ็กต์นี้ยังใช้ TypeScript สำหรับการพัฒนาโค้ดที่มีคุณภาพสูง และ Jest สำหรับการทดสอบโค้ด\n\nโดยรวมแล้ว โปรเจ็กต์ AI-Line-POC เป็นโปรเจ็กต์ที่ใช้ Node.js และ Cloudflare Workers เพื่อสร้างเว็บแอปพลิเคชันบนคลาวด์ โปรเจ็กต์นี้มีการใช้ Express.js สำหรับการสร้างเว็บแอปพลิเคชัน และ Wrangler สำหรับการจัดการ Cloudflare Workers โปรเจ็กต์นี้ยังใช้ TypeScript สำหรับการพัฒนาโค้ดที่มีคุณภาพสูง และ Hugging Face สำหรับการใช้โมเดล AI",
+      "selectedEvidencePaths": ["package.json", "tsconfig.json", "wrangler.jsonc", "README.md", "src/index.ts", "AGENTS.md", "POC_GUIDE.md", "scripts/publish-rich-menu.mjs", "src/types.ts", "src/utils.ts", "test/bot-routing.test.ts", "test/intent-router.test.ts"],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 10235
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "branch": "main",
+      "question": "business logic หลักคืออะไร",
+      "answer": "ยังตอบจากหลักฐานที่อ่านได้อย่างมั่นใจไม่ได้ครับ เพื่อไม่ให้เดาข้อมูลจากชื่อไฟล์\n\nไฟล์ที่ระบบอ่านได้:\n- src/services/bot.service.ts\n- src/services/github.service.ts\n- src/services/hugging-face.service.ts\n- src/services/intent-router.service.ts\n- src/services/line.service.ts\n- src/services/repository-state.service.ts\n\nลองระบุชื่อไฟล์, class, function หรือ Service ที่ต้องการให้ตรวจครับ",
+      "selectedEvidencePaths": ["src/services/bot.service.ts", "src/services/github.service.ts", "src/services/hugging-face.service.ts", "src/services/intent-router.service.ts", "src/services/line.service.ts", "src/services/repository-state.service.ts", "src/index.ts", "README.md", "package.json", "tsconfig.json", "wrangler.jsonc", "AGENTS.md"],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 16801
+    },
+    {
+      "repoRequested": "SaranThanaraks/TEST-CMD",
+      "branch": "main",
+      "question": "Repo นี้เป็นระบบอะไร",
+      "answer": "ระบบนี้คือระบบจัดการการลงทะเบียนสำหรับงานหรืองานอื่นๆ โดยมีแอปพลิเคชันสองตัวคือ Admin และ User ผู้ใช้กรอกข้อมูลและเอกสาร ส่วนผู้ดูแลจัดการการลงทะเบียนและดูเอกสาร ทั้งสองแอปใช้ API Client และ Registration Store\n\nหลักฐาน: README.md, apps/admin/package.json, apps/user/package.json, packages/api-client/package.json, packages/registration-store/package.json\n\nคำตอบปิดท้ายด้วยข้อสันนิษฐานว่าสามารถขยายไปงานอื่นได้",
+      "selectedEvidencePaths": ["README.md", "package.json", "apps/admin/package.json", "apps/user/package.json", "packages/api-client/package.json", "packages/registration-store/package.json", "packages/api-client/src/index.ts", "packages/registration-store/src/index.ts", "tsconfig.base.json", "apps/admin/next.config.mjs", "apps/admin/tsconfig.json", "apps/user/next.config.mjs"],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 4508
+    },
+    {
+      "repoRequested": "SaranThanaraks/TEST-CMD",
+      "branch": "main",
+      "question": "Service ใช้ทำอะไร",
+      "answer": "ยังตอบจากหลักฐานที่อ่านได้อย่างมั่นใจไม่ได้ครับ เพื่อไม่ให้เดาข้อมูลจากชื่อไฟล์\n\nไฟล์ที่ระบบอ่านได้:\n- README.md\n- package.json\n- apps/admin/package.json\n- apps/user/package.json\n- packages/api-client/package.json\n- packages/registration-store/package.json\n\nลองระบุชื่อไฟล์, class, function หรือ Service ที่ต้องการให้ตรวจครับ",
+      "selectedEvidencePaths": ["README.md", "package.json", "apps/admin/package.json", "apps/user/package.json", "packages/api-client/package.json", "packages/registration-store/package.json", "tsconfig.base.json", "apps/admin/next.config.mjs", "apps/admin/tsconfig.json", "apps/user/next.config.mjs", "apps/user/tsconfig.json", "packages/api-client/src/index.ts"],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 6771
+    }
+  ]
+}

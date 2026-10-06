@@ -1,0 +1,161 @@
+{
+  "generatedAt": "2026-10-05T10:53:51.478Z",
+  "runner": "BotService live QA round 5 with GitHubService and HuggingFaceService",
+  "testDesigner": "subagent: answer_tester",
+  "secretsRecorded": false,
+  "results": [
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/AI-Line-POC\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "Repo นี้เป็นระบบอะไร",
+      "answer": "โมเดลยังสร้างคำตอบที่ผ่านการตรวจหลักฐานไม่ได้ครับ จึงหยุดไว้ก่อนเพื่อไม่ส่งข้อมูลที่เดาเกินโค้ด\n\nไฟล์ที่ระบบอ่านได้:\n- README.md\n\nลองระบุชื่อไฟล์, class, function หรือ Service ที่ต้องการให้ตรวจครับ",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/AI-Line-POC@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "README.md",
+        "package.json",
+        "src/index.ts",
+        "tsconfig.json",
+        "wrangler.jsonc",
+        "src/presenters/repository.presenter.ts",
+        "src/services/repository-state.service.ts",
+        "AGENTS.md"
+      ],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 5129
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/AI-Line-POC\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "เป็นระบบใช้ทำอะไร",
+      "answer": "โมเดลยังสร้างคำตอบที่ผ่านการตรวจหลักฐานไม่ได้ครับ จึงหยุดไว้ก่อนเพื่อไม่ส่งข้อมูลที่เดาเกินโค้ด\n\nไฟล์ที่ระบบอ่านได้:\n- README.md\n\nลองระบุชื่อไฟล์, class, function หรือ Service ที่ต้องการให้ตรวจครับ",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/AI-Line-POC@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "README.md",
+        "package.json",
+        "src/index.ts",
+        "tsconfig.json",
+        "wrangler.jsonc",
+        "AGENTS.md",
+        "POC_GUIDE.md",
+        "scripts/publish-rich-menu.mjs"
+      ],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 4473
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/AI-Line-POC\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "ระบบนี้ใช้ tech stack อะไร",
+      "answer": "Tech stack ที่ยืนยันจาก repo:\n- Runtime: node@>=20 <23\n- Framework/Libraries: express\n- ภาษาและ tooling: typescript, tsx, wrangler\n- Platform: Cloudflare Workers + Wrangler, Cloudflare KV\n- Integrations: LINE Messaging API, GitHub API, Hugging Face API\nหลักฐาน: `package.json`, `wrangler.jsonc`, `src/index.ts`, `README.md`",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/AI-Line-POC@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "package.json",
+        "tsconfig.json",
+        "wrangler.jsonc",
+        "README.md",
+        "src/index.ts",
+        "AGENTS.md",
+        "POC_GUIDE.md"
+      ],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 1824
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/AI-Line-POC\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "business logic หลักคืออะไร",
+      "answer": "การทำงานหลักของระบบ AI LINE POC นี้คือการให้คำตอบและอธิบายโค้ดใน Repository GitHub ที่ผู้ใช้เลือกไว้ โดยผ่าน LINE Messaging API\n\nหลักการทำงานหลักของระบบ AI LINE POC นี้คือ:\n\n1.  ผู้ใช้จะส่งข้อความผ่าน LINE Messaging API\n2.  ระบบจะตรวจสอบและตอบกลับผ่าน LINE Messaging API\n3.  ระบบจะตรวจสอบว่าผู้ใช้เลือก Repository GitHub หรือไม่ หากไม่ ระบบจะขอให้ผู้ใช้เลือก Repository GitHub\n4.  เมื่อผู้ใช้เลือก Repository GitHub ระบบจะอ่านโค้ดใน Repository นั้นและตอบกลับคำอธิบาย\n5.  ระบบจะเก็บสถานะของ Repository ที่ผู้ใช้เลือกไว้\n\nหลักการทำงานนี้จะดำเนินไปอย่างต่อเนื่องจนกว่าผู้ใช้จะหยุดส่งข้อความผ่าน LINE Messaging API\n\nหลักฐาน:\n\n*   `src/services/bot.service.ts` - ไฟล์นี้มีรายละเอียดเกี่ยวกับวิธีการทำงานของระบบ AI LINE POC\n*   `src/services/github.service.ts` - ไฟล์นี้มีรายละเอียดเกี่ยวกับวิธีการอ่านโค้ดใน Repository GitHub\n*   `src/services/hugging-face.service.ts` - ไฟล์นี้มีรายละเอียดเกี่ยวกับวิธีการตอบกลับคำอธิบายโค้ด\n\nหลักฐานเหล่านี้จะช่วยให้เข้าใจวิธีการทำงานของระบบ AI LINE POC ได้ดีขึ้น",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/AI-Line-POC@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "src/services/bot.service.ts",
+        "src/services/intent-router.service.ts",
+        "src/services/line.service.ts",
+        "src/services/repository-state.service.ts",
+        "src/index.ts",
+        "src/services/github.service.ts",
+        "src/services/hugging-face.service.ts",
+        "README.md"
+      ],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 5320
+    },
+    {
+      "repoRequested": "SaranThanaraks/TEST-CMD",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/TEST-CMD\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "Repo นี้เป็นระบบอะไร",
+      "answer": "ระบบนี้คือระบบจัดการการลงทะเบียนสำหรับงานหรืองานอื่นๆ โดยมีแอปพลิเคชันสำหรับผู้ใช้และแอปพลิเคชันสำหรับผู้ดูแลระบบ ผู้ใช้สามารถลงทะเบียนและแก้ไขข้อมูลของตนเองได้ ในขณะที่ผู้ดูแลระบบสามารถดูข้อมูลการลงทะเบียนของผู้ใช้และดาวน์โหลดเอกสารที่อัปโหลดโดยผู้ใช้\n\nหลักฐาน\n- README.md",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/TEST-CMD@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "README.md",
+        "package.json",
+        "apps/admin/package.json",
+        "apps/user/package.json",
+        "packages/api-client/package.json",
+        "packages/registration-store/package.json",
+        "packages/api-client/src/index.ts",
+        "packages/registration-store/src/index.ts"
+      ],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 3374
+    },
+    {
+      "repoRequested": "SaranThanaraks/TEST-CMD",
+      "selectionReply": "เลือก repo แล้ว: SaranThanaraks/TEST-CMD\nBranch เริ่มต้น: main\nดู branch ทั้งหมด: /branches\nเลือก branch: /branch ชื่อ-branch",
+      "branch": "main",
+      "question": "Service ใช้ทำอะไร",
+      "answer": "ยังไม่พบไฟล์หรือโฟลเดอร์ชื่อ service ที่ชัดเจนในหลักฐานของ repo นี้ครับ\n\nส่วนที่พบและอาจหมายถึง:\n- packages/api-client/src/index.ts\n- packages/registration-store/src/index.ts\n- apps/admin/package.json\n- apps/user/package.json\n- packages/api-client/package.json\n- packages/registration-store/package.json\n\nระบุ path ที่หมายถึง แล้วผมจะอ่านโค้ดและอธิบายหน้าที่ให้ตรงตัวครับ",
+      "error": null,
+      "callPath": [
+        "github.buildRepositoryContext:SaranThanaraks/TEST-CMD@main",
+        "ai.answerRepositoryQuestion"
+      ],
+      "selectedEvidencePaths": [
+        "packages/api-client/src/index.ts",
+        "packages/registration-store/src/index.ts",
+        "README.md",
+        "package.json",
+        "apps/admin/package.json",
+        "apps/user/package.json",
+        "packages/api-client/package.json",
+        "packages/registration-store/package.json",
+        "tsconfig.base.json",
+        "apps/admin/next.config.mjs",
+        "apps/admin/tsconfig.json",
+        "apps/user/next.config.mjs"
+      ],
+      "expectedMode": "repository",
+      "actualMode": "repository",
+      "durationMs": 2590
+    }
+  ]
+}

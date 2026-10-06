@@ -1,0 +1,20 @@
+Repository answer failed grounding validation [ "the overview omits the README's GitHub repository purpose" ]
+Repository answer failed grounding validation [
+  'the answer cites no exact path from SELECTED EVIDENCE PATHS',
+  'the answer cites paths outside SELECTED EVIDENCE PATHS: bot.service.ts, github.service.ts, hugging-face.service.ts',
+  'the answer invents line numbers even though repository context contains no line-number metadata',
+  'the answer contains too many list items for LINE',
+  'the business-logic answer cites no selected entry point, service, route, controller, or store',
+  'the business-logic flow omits selected entry-point or state/storage evidence',
+  'the business-logic answer must use 3–4 numbered steps and one compact evidence line, not a second bullet list',
+  'the business-logic answer is too verbose for LINE'
+]
+Corrected repository answer failed grounding validation [
+  'the answer cites no exact path from SELECTED EVIDENCE PATHS',
+  'the model output was truncated and must be rewritten more concisely',
+  'the answer invents line numbers even though repository context contains no line-number metadata',
+  'the answer repeats list items or conclusions',
+  'the business-logic answer cites no selected entry point, service, route, controller, or store',
+  'the business-logic flow omits selected entry-point or state/storage evidence',
+  'the business-logic answer must use 3–4 numbered steps and one compact evidence line, not a second bullet list'
+]

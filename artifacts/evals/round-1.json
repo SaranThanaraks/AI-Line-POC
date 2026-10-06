@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-10-05T05:59:11.999Z",
+  "runner": "BotService live QA with GitHubService and HuggingFaceService",
+  "testDesigner": "subagent: answer_tester",
+  "executionNote": "The subagent prepared the harness and questions. The root agent executed the same harness because the subagent network sandbox blocked external requests.",
+  "secretsRecorded": false,
+  "results": [
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "branch": "main",
+      "question": "Repo นี้เป็นระบบอะไร",
+      "answer": "Repo นี้เป็นระบบ AI Developer Assistant บน LINE ที่เชื่อมกับ GitHub repository เพื่อช่วยให้นักพัฒนาเข้าใจ ตรวจสอบ และปรับปรุงระบบ ผู้ใช้เลือก repository และ branch แล้วถามเกี่ยวกับ source code ได้ คำตอบสร้างด้วยโมเดลที่เรียกผ่าน Hugging Face OpenAI-compatible API และ backend ทำงานบน Cloudflare Workers ระบบรองรับบทสนทนาสั้นๆ และความรู้ด้าน software แต่ไม่ใช่ chatbot ทั่วไป",
+      "error": null,
+      "callPath": ["github.buildRepositoryContext", "ai.answerRepositoryQuestion"],
+      "lastMode": "repository",
+      "durationMs": 4136
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "branch": "main",
+      "question": "เป็นระบบใช้ทำอะไร",
+      "answer": "ระบบนี้คือ AI Developer Assistant บน LINE ซึ่งเชื่อมกับ GitHub repository เพื่อช่วยเหลือนักพัฒนาเข้าใจ ตรวจสอบ และปรับปรุงระบบ ผู้ใช้เลือก repository และ branch แล้วถามเกี่ยวกับ source code ได้ คำตอบสร้างด้วยโมเดลที่เรียกผ่าน Hugging Face OpenAI-compatible API และ backend ทำงานบน Cloudflare Workers ระบบรองรับบทสนทนาสั้นๆ และความรู้ด้าน software แต่ไม่ใช่ chatbot ทั่วไป",
+      "error": null,
+      "callPath": ["github.buildRepositoryContext", "ai.answerRepositoryQuestion"],
+      "lastMode": "repository",
+      "durationMs": 4092
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "branch": "main",
+      "question": "ระบบนี้ใช้ tech stack อะไร",
+      "answer": "ระบบนี้ใช้ tech stack นั้นอยู่ที่ตัวแปร `HF_MODEL` ในไฟล์ `wrangler.jsonc` ซึ่งกำหนดให้เป็น `meta-llama/Llama-3.1-8B-Instruct:novita` นอกจากนี้ยังมีการอ้างถึง tech stack ในไฟล์ `src/presenters/repository.presenter.ts` ซึ่งแสดงรายละเอียดเพิ่มเติมเกี่ยวกับ tech stack ที่ใช้ในการพัฒนา ระบบนี้",
+      "error": null,
+      "callPath": ["github.buildRepositoryContext", "ai.answerRepositoryQuestion"],
+      "lastMode": "repository",
+      "durationMs": 4813
+    },
+    {
+      "repoRequested": "SaranThanaraks/AI-Line-POC",
+      "branch": "main",
+      "question": "business logic หลักคืออะไร",
+      "answer": "**คำตอบที่ถูกต้องตามที่คุณถาม:**\n\"business logic หลักคืออะไร\" เป็นคำถามประเภท \"repository\" เพราะ มันเกี่ยวข้องกับ \"ระบบนี้\" ซึ่งเป็นระบบที่คุณกำลังพูดถึงอยู่\n\n**การทำงานของระบบ:**\n\n1. ระบบจะตรวจสอบว่าคำถามนี้เป็นคำถามประเภท \"repository\" หรือไม่ หากเป็นคำถามประเภท \"repository\" ระบบจะเรียก GitHub API เพื่อเก็บ repository และ branch ที่เลือกไว้\n2. ระบบจะสร้าง context สำหรับโมเดลที่จะใช้ในการตอบคำถาม\n3. ระบบจะเรียกโมเดลเพื่อตอบคำถามนี้\n4. ระบบจะตอบกลับกับผู้ใช้\n\n**การทำงานของโมเดล:**\n\nโมเดลจะทำงานโดยการรับ context ที่ระบบสร้างขึ้นและตอบกลับคำตอบที่เหมาะสม\n\n**ผลลัพธ์ที่คาดหวังจากคำถามนี้:**\nผลลัพธ์ที่คาดหวังจากคำถามนี้คือคำตอบที่เกี่ยวข้องกับ \"business logic หลัก\" ของระบบนี้\n\n**คุณสามารถใช้คำถามนี้เพื่อ:**\nคุณสามารถใช้คำถามนี้เพื่อเข้าใจ business logic หลักของระบบนี้ได้",
+      "error": null,
+      "callPath": ["github.buildRepositoryContext", "ai.answerRepositoryQuestion"],
+      "lastMode": "repository",
+      "durationMs": 4300
+    },
+    {
+      "repoRequested": "SaranThanaraks/TEST-CMD",
+      "branch": "main",
+      "question": "Repo นี้เป็นระบบอะไร",
+      "answer": "ระบบนี้คือระบบจัดการการลงทะเบียนสำหรับงานหรืองานอื่นๆ โดยมีเว็บไซต์สำหรับผู้ใช้และเว็บไซต์สำหรับเจ้าหน้าที่ที่สามารถเข้าถึงข้อมูลการลงทะเบียนได้\n\nระบบนี้ประกอบด้วยส่วนต่างๆ ดังนี้\n\n* ส่วนสำหรับผู้ใช้ (User App): เว็บไซต์ที่ผู้ใช้สามารถลงทะเบียนและแก้ไขข้อมูลการลงทะเบียนได้\n* ส่วนสำหรับเจ้าหน้าที่ (Admin App): เว็บไซต์ที่เจ้าหน้าที่สามารถเข้าถึงข้อมูลการลงทะเบียนและแก้ไขข้อมูลได้\n* ส่วน API Client: เป็นแพ็คเกจที่ช่วยให้สามารถเข้าถึง API ของระบบได้\n* ส่วน Registration Store: เป็นแพ็คเกจที่ช่วยให้สามารถจัดการข้อมูลการลงทะเบียนได้\n\nระบบนี้สามารถทำงานได้บน Node.js และใช้ Next.js เป็น Framework สำหรับการพัฒนาเว็บไซต์",
+      "error": null,
+      "callPath": ["github.buildRepositoryContext", "ai.answerRepositoryQuestion"],
+      "lastMode": "repository",
+      "durationMs": 4184
+    },
+    {
+      "repoRequested": "SaranThanaraks/TEST-CMD",
+      "branch": "main",
+      "question": "Service ใช้ทำอะไร",
+      "answer": "บริการนี้เป็น Next.js monorepo ที่มี 2 โมดูลหลัก คือ admin และ user app ซึ่งใช้สำหรับการจัดการการลงทะเบียนงานประชุมหรืองานอื่นๆ\n\n- **User App** ใช้สำหรับ users ที่ต้องการลงทะเบียนงานประชุมหรืองานอื่นๆ โดยสามารถยื่นเอกสารและข้อมูลส่วนตัวได้\n- **Admin App** ใช้สำหรับ staff ที่ต้องการจัดการการลงทะเบียนงานประชุมหรืองานอื่นๆ โดยสามารถดูรายละเอียดการลงทะเบียน, แก้ไขข้อมูล, และดาวน์โหลดเอกสารได้\n\nบริการนี้ยังมีโมดูลเสริมอื่นๆ เช่น **api-client** และ **registration-store** ซึ่งใช้สำหรับการจัดการการเชื่อมต่อ API และการเก็บข้อมูลการลงทะเบียน\n\nโดยรวมแล้ว บริการนี้ใช้สำหรับการจัดการการลงทะเบียนงานประชุมหรืองานอื่นๆ และให้ความสะดวกสบายสำหรับผู้ใช้และ staff ในการส่งมอบข้อมูลและเอกสาร",
+      "error": null,
+      "callPath": ["github.buildRepositoryContext", "ai.answerRepositoryQuestion"],
+      "lastMode": "repository",
+      "durationMs": 8524
+    }
+  ]
+}

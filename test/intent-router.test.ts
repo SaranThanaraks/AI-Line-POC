@@ -30,6 +30,7 @@ const cases: Array<{
   { message: "อธิบาย SOLID แบบง่ายๆ", expected: "general", context: selectedRepo },
   { message: "Cloudflare Worker จำกัด execution ยังไง", expected: "general", context: selectedRepo },
   { message: "refactor คืออะไร", expected: "general", context: selectedRepo },
+  { message: "Service คืออะไร", expected: "general", context: selectedRepo },
   { message: "Project นี้ทำอะไร", expected: "repository", context: selectedRepo },
   { message: "repo นี้เกี่ยวกับอะไร", expected: "repository", context: selectedRepo },
   { message: "ระบบนี้มี feature อะไรบ้าง", expected: "repository", context: selectedRepo },
@@ -55,6 +56,8 @@ const cases: Array<{
   { message: "performance มีคอขวดตรงไหน", expected: "repository", context: selectedRepo },
   { message: "test coverage ควรเพิ่มตรงไหน", expected: "repository", context: selectedRepo },
   { message: "โครงสร้าง service แบบนี้โอเคไหม", expected: "repository", context: selectedRepo },
+  { message: "Service ใช้ทำอะไร", expected: "repository", context: selectedRepo },
+  { message: "Controller ทำหน้าที่อะไร", expected: "repository", context: selectedRepo },
   { message: "ถ้าจะรองรับ GitLab ควรแก้อะไร", expected: "repository", context: selectedRepo },
   { message: "/ask JWT คืออะไร", expected: "general", context: selectedRepo },
   { message: "/code JWT คืออะไร", expected: "repository", context: selectedRepo },
@@ -71,6 +74,16 @@ const cases: Array<{
   },
   {
     message: "อธิบายสั้นๆ",
+    expected: "repository",
+    context: { hasSelectedRepository: true, previousMode: "repository" },
+  },
+  {
+    message: "เป็นระบบใช้ทำอะไร",
+    expected: "repository",
+    context: { hasSelectedRepository: true, previousMode: "repository" },
+  },
+  {
+    message: "ใช้ทำอะไร",
     expected: "repository",
     context: { hasSelectedRepository: true, previousMode: "repository" },
   },

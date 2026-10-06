@@ -1,0 +1,17 @@
+Repository answer failed grounding validation [
+  'the answer cites paths outside SELECTED EVIDENCE PATHS: POC_GUIDE.md, src/index.ts'
+]
+Repository answer failed grounding validation [
+  'the answer cites paths outside SELECTED EVIDENCE PATHS: POC_GUIDE.md, src/index.ts'
+]
+Corrected repository answer failed grounding validation [
+  'the answer cites paths outside SELECTED EVIDENCE PATHS: POC_GUIDE.md'
+]
+Repository answer failed grounding validation [
+  'the model output was truncated and must be rewritten more concisely',
+  'the answer contains too many list items for LINE'
+]
+Corrected repository answer failed grounding validation [
+  'the model output was truncated and must be rewritten more concisely',
+  'the answer invents line numbers even though repository context contains no line-number metadata'
+]
