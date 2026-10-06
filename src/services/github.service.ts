@@ -193,7 +193,9 @@ export class GitHubService {
     const isAmbiguousComponentQuestion = /^(?:service|services|controller|module|component|endpoint|api|worker)\s*(?:นี้)?\s*(?:ใช้ทำอะไร|เอาไว้ทำอะไร|ทำหน้าที่อะไร|มีหน้าที่อะไร|ทำอะไร)/i.test(
       question.trim(),
     );
-    const maxFiles = isBusinessLogicQuestion || isDomainWorkflowQuestion
+    const maxFiles = isAmbiguousComponentQuestion
+      ? 7
+      : isBusinessLogicQuestion || isDomainWorkflowQuestion
       ? 8
       : isRefactorReviewQuestion
         ? 12
@@ -277,6 +279,16 @@ export class GitHubService {
           /(^|\/)(?:src\/)?(?:index|main|app|server|worker)\.(?:ts|tsx|js|jsx|mjs|py|go|rs|java|kt|swift)$/i.test(file.path)
         ) {
           score += 120;
+        }
+        if (isAmbiguousComponentQuestion) {
+          if (
+            /(?:^|\/)(?:services?\/[^/]+|[^/]*service)\.(?:ts|tsx|js|jsx|mjs|py|go|rs|java|kt|swift)$/i.test(file.path)
+          ) {
+            score += 320;
+          }
+          if (/(?:^|\/)(?:test|tests|__tests__)(?:\/|\.)/i.test(file.path)) {
+            score -= 320;
+          }
         }
         if (isSymbolInventoryQuestion) {
           if (/\.(?:ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|swift|php|rb|cs|cpp|c)$/i.test(file.path)) {
@@ -472,13 +484,16 @@ export class GitHubService {
       const matchingPaths = component
         ? selectedPaths.filter((path) => path.toLowerCase().includes(component))
         : [];
-      if (matchingPaths.length === 0) {
-        return "The component name is ambiguous and no selected path uniquely matches it. State that clearly; if interpreting it as the whole repository, say so explicitly and ground the answer in README or manifests.";
+      if (matchingPaths.length === 1) {
+        return `Explain the matched component's concrete responsibility, inputs, outputs, collaborators, and role in the project. Cite this exact path: ${matchingPaths[0]}`;
       }
-      if (matchingPaths.length > 1) {
-        return `The component name is ambiguous. Name the matching paths and ask which one the user means before making component-specific claims: ${matchingPaths.join(", ")}`;
-      }
-      return `Explain only the matched component and cite this exact path: ${matchingPaths[0]}`;
+      return [
+        "Interpret this broad component question as asking how that layer or component type works in the selected project.",
+        "Summarize the concrete responsibilities of the most relevant production components instead of giving a generic definition or asking the user to choose a candidate.",
+        matchingPaths.length > 0
+          ? `Prefer these production paths and cite the paths you use: ${matchingPaths.slice(0, 5).join(", ")}`
+          : "Use the selected production source and clearly state when the repository has no dedicated component of that name.",
+      ].join(" ");
     }
 
     return "Answer the exact repository question from the selected evidence. Cite exact paths and state when the evidence is incomplete.";

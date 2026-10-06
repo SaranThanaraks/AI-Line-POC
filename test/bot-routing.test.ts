@@ -107,15 +107,14 @@ test("/code uses the selected repository", async () => {
   ]);
 });
 
-test("the previous question is supplied as retrieval context for follow-ups", async () => {
+test("the previous question is AI context but never changes current file retrieval", async () => {
   const { bot, calls, contexts } = createBot({
     ...initialState,
     lastQuestion: "business logic หลักคืออะไร",
   });
   await bot.createReply("อธิบายเพิ่มแบบสั้นๆ", "line-user");
 
-  assert.match(calls[0], /^github:Previous user question:/);
-  assert.match(calls[0], /Current user question: อธิบายเพิ่มแบบสั้นๆ$/);
+  assert.equal(calls[0], "github:อธิบายเพิ่มแบบสั้นๆ");
   assert.equal(calls[1], "repository:อธิบายเพิ่มแบบสั้นๆ");
   assert.match(contexts[0], /CONVERSATION CONTEXT:/);
   assert.match(contexts[0], /Previous user question: business logic หลักคืออะไร/);

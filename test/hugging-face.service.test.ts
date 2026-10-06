@@ -72,6 +72,8 @@ test("repository questions always call the model without category templates", as
     assert.match(prompt, /currently selected GitHub repository/i);
     assert.match(prompt, /project purpose, features, code, architecture/i);
     assert.match(prompt, /unrelated request/i);
+    assert.match(prompt, /current question is authoritative/i);
+    assert.match(prompt, /broad question such as what Service/i);
     assert.match(requestBody?.messages[1].content ?? "", /USER QUESTION:\nมีฟีเจอร์อะไรบ้าง/);
   } finally {
     globalThis.fetch = originalFetch;
@@ -140,6 +142,51 @@ test("repository answers retry when they cite a path outside the evidence", asyn
     assert.equal(answer, "The entry point is `src/index.ts`.");
     assert.equal(calls, 2);
     assert.deepEqual(temperatures, [0.25, 0.1]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("repository factual answers retry when they omit evidence paths", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    const content = calls === 1
+      ? "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ครับ"
+      : "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ตาม `README.md` ครับ";
+    return Response.json({ choices: [{ message: { content } }] });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+      "โปรเจกต์นี้ทำอะไร",
+      repositoryContext,
+    );
+    assert.match(answer, /README\.md/);
+    assert.equal(calls, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("grounded security reviews up to 2,000 characters are accepted", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  const content = `พบความเสี่ยงที่ควรตรวจใน \`src/index.ts\` ครับ\n${"รายละเอียดความเสี่ยงและแนวทางแก้ ".repeat(45)}`;
+  assert.ok(content.length > 1_200 && content.length < 2_000);
+  globalThis.fetch = (async () => {
+    calls += 1;
+    return Response.json({ choices: [{ message: { content } }] });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+      "โปรเจกต์นี้มีความเสี่ยง security อย่างไร",
+      repositoryContext,
+    );
+    assert.equal(answer, content.trim());
+    assert.equal(calls, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }

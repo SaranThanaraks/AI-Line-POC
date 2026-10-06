@@ -86,7 +86,7 @@ LineAI/
 2. `BotService` ขอข้อมูล repo จาก GitHub และบันทึก default branch ลง KV
 3. ผู้ใช้อาจพิมพ์ `/branches` และ `/branch branch-name` เพื่อเปลี่ยน branch
 4. เมื่อมี selected repo ข้อความปกติทุกข้อความจะเข้าเส้นทาง repository โดยไม่ผ่าน intent classifier; `/ask` ใช้ข้าม repo และ `/code` ใช้บังคับอ่าน repo
-5. `GitHubService` โหลด branch, recursive tree และไฟล์ที่เกี่ยวข้อง โดยใช้คำถามปัจจุบันกับคำถามก่อนหน้าเป็น retrieval context สำหรับ follow-up
+5. `GitHubService` โหลด branch, recursive tree และเลือกไฟล์จากคำถามปัจจุบันเท่านั้น ส่วนคำถามก่อนหน้าจะส่งให้โมเดลเป็นบริบทเสริมโดยไม่เปลี่ยนชุดไฟล์ของหัวข้อใหม่
 6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์ โดยคำถามภาพรวม/วัตถุประสงค์จะให้น้ำหนัก `README`, manifest, entry point, route/controller และเอกสาร architecture มากขึ้น
 7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป
 8. `HuggingFaceService` ส่งคำถามพร้อม scope prompt ไปยังโมเดล คำตอบเกี่ยวกับ repo ต้องอ้าง path ที่เป็นหลักฐาน แยกข้อเท็จจริงออกจากคำแนะนำ และห้ามแต่งข้อมูลที่ไม่มีใน context
@@ -98,7 +98,7 @@ LineAI/
 
 - คำถาม overview ให้น้ำหนัก README, manifest และ entry point เพื่อให้โมเดลเห็น purpose/feature/workflow ก่อน setup detail
 - คำถาม tech stack ให้น้ำหนัก `package.json` และ runtime config ส่วน business logic ให้น้ำหนัก entry point, orchestration, state/storage และ integration services
-- คำถาม component กว้างๆ เช่น `Service ใช้ทำอะไร` จะส่งหลักฐานที่เกี่ยวข้องให้โมเดล และ prompt กำหนดให้ถามกลับเมื่อระบุเป้าหมายไม่ได้จริง
+- คำถาม component กว้างๆ เช่น `Service ใช้ทำอะไร` จะให้น้ำหนัก production service มากกว่า test และให้โมเดลสรุปหน้าที่ของ service layer จากโค้ด แทนการโยนรายชื่อ candidate ให้ผู้ใช้เลือกทันที
 - path จะถูกเพิ่มใน `SELECTED EVIDENCE PATHS` ต่อเมื่อโหลดเนื้อหาไฟล์สำเร็จเท่านั้น path ที่เลือกไว้แต่ fetch ไม่สำเร็จไม่ถือเป็นหลักฐาน
 - GitHub request retry transient network error, HTTP 429 และ 5xx สูงสุด 3 ครั้ง และโหลดไฟล์เป็น batch จำกัด concurrency
 - คำตอบจากโมเดลต้องอ้าง path ใน allowlist, ไม่มี path/เลขบรรทัดแต่ง, ไม่ถูกตัดกลาง, ไม่ยาวหรือซ้ำเกินเกณฑ์ และไม่มี CJK ปนในคำตอบไทย หากไม่ผ่านจะ retry หนึ่งครั้งแล้วใช้ safe fallback
@@ -332,7 +332,7 @@ Script ใช้ `LINE_CHANNEL_ACCESS_TOKEN` จาก `.env`, สร้าง m
 
 Natural-language parser ใช้ deterministic rules เฉพาะคำสั่งเลือก repo/branch เท่านั้น ข้อความสนทนาปกติไม่มี intent classifier: เมื่อเลือก repo แล้วทุกข้อความจะเข้า project-scoped AI ส่วน `/ask` ใช้ถามความรู้ software โดยไม่อ่าน repo
 
-ระบบเก็บ `lastQuestion` เพื่อช่วย retrieval ของ follow-up เช่น `อธิบายเพิ่ม` แต่โมเดลยังต้องตอบคำถามปัจจุบันเป็นหลัก
+ระบบเก็บ `lastQuestion` เป็น conversation context สำหรับ follow-up เช่น `อธิบายเพิ่ม` แต่ retrieval ใช้คำถามปัจจุบันเท่านั้น เพื่อไม่ให้หัวข้อเก่าปนเมื่อผู้ใช้เปลี่ยนเรื่อง
 
 ## 10. Security ที่ทำแล้ว
 

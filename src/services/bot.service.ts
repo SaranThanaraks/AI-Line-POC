@@ -135,22 +135,16 @@ export class BotService {
     question: string,
     state: RepoState,
   ): Promise<string> {
-    const retrievalQuestion = state.lastQuestion
-      ? [
-          `Previous user question: ${state.lastQuestion}`,
-          `Current user question: ${question}`,
-        ].join("\n")
-      : question;
     const repositoryContext = await this.github.buildRepositoryContext(
       state,
-      retrievalQuestion,
+      question,
     );
     const context = state.lastQuestion
       ? [
           repositoryContext,
           "CONVERSATION CONTEXT:",
           `Previous user question: ${state.lastQuestion}`,
-          "Use it only to resolve a follow-up. The current user question remains authoritative.",
+          "Use it only when the current message is clearly a follow-up. A new concrete topic in the current question always overrides it.",
         ].join("\n")
       : repositoryContext;
     return this.ai.answerRepositoryQuestion(question, context);

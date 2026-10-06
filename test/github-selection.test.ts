@@ -162,3 +162,24 @@ test("test-gap retrieval includes existing suites and package scripts", () => {
   assert.ok(selected.includes("scripts/acceptance-cases.mjs"));
   assert.ok(selected.includes("scripts/happy-flow.mjs"));
 });
+
+test("broad service questions prioritize production services over tests", () => {
+  const selectedPaths = select("Service นี้ใช้ทำอะไร");
+  assert.ok(selectedPaths.includes("src/services/bot.service.ts"));
+  assert.ok(selectedPaths.includes("src/services/github.service.ts"));
+  assert.ok(!selectedPaths.includes("test/bot-routing.test.ts"));
+});
+
+test("broad service focus asks the model to explain the layer instead of listing candidates", () => {
+  const github = new GitHubService() as unknown as {
+    getRetrievalFocus(question: string, selectedPaths: string[]): string;
+  };
+  const focus = github.getRetrievalFocus("Service นี้ใช้ทำอะไร", [
+    "src/services/bot.service.ts",
+    "src/services/github.service.ts",
+  ]);
+
+  assert.match(focus, /layer or component type/i);
+  assert.match(focus, /concrete responsibilities/i);
+  assert.doesNotMatch(focus, /ask which one/i);
+});
