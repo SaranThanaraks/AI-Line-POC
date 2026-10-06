@@ -129,6 +129,22 @@ test("repository symbol inventory questions keep reading the selected repo", asy
   assert.equal(writes[0].lastMode, "repository");
 });
 
+test("Thai and English feature questions keep reading the selected repo", async () => {
+  for (const question of ["มีฟีเจอร์อะไรบ้าง", "มี feature อะไร"]) {
+    const { bot, calls, writes } = createBot({
+      ...initialState,
+      lastMode: "repository",
+      lastQuestion: "ระบบนี้ทำอะไร",
+    });
+    await bot.createReply(question, "line-user");
+    assert.deepEqual(calls, [
+      `github:${question}`,
+      `repository:${question}`,
+    ]);
+    assert.equal(writes[0].lastMode, "repository");
+  }
+});
+
 test("detailed function inventory is not mistaken for a repository-list command", async () => {
   const { bot, calls } = createBot({
     ...initialState,

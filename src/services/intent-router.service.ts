@@ -163,7 +163,7 @@ export class IntentRouterService {
 
     return (
       /(?:service|services|controller|module|component|endpoint|api|worker|function|class|ฟังก์ชัน|คลาส|โมดูล|เซอร์วิส)\s*(?:นี้)?\s*(?:ใช้ทำอะไร|เอาไว้ทำอะไร|ทำหน้าที่อะไร|มีหน้าที่อะไร|ทำอะไร)/i.test(normalized) ||
-      /(?:มี|แสดง|บอก|สรุป|list|show)\s*(?:รายชื่อ)?\s*(?:functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|เอ็นด์พอยต์)\s*(?:อะไร|ไหน)?\s*(?:บ้าง|ทั้งหมด)?/i.test(normalized) ||
+      /(?:มี|แสดง|บอก|สรุป|list|show)\s*(?:รายชื่อ)?\s*(?:features?|capabilit(?:y|ies)|ฟีเจอร์|ความสามารถ|functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|เอ็นด์พอยต์)\s*(?:อะไร|ไหน)?\s*(?:บ้าง|ทั้งหมด)?/i.test(normalized) ||
       /(?:functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|เอ็นด์พอยต์)\s*(?:มี)?\s*(?:อะไร|ไหน)\s*(?:บ้าง|ทั้งหมด)/i.test(normalized) ||
       /(?:เป็น)?(?:ระบบ|แอป|application|โปรแกรม|โปรเจกต์|โปรเจค|project|repo|repository)\s*(?:นี้)?\s*(?:เป็นอะไร|ทำอะไร|ใช้ทำอะไร|เอาไว้ทำอะไร|เกี่ยวกับอะไร)/i.test(normalized) ||
       /(?:entry\s*point|จุดเริ่มต้น).*(?:อยู่ไหน|ไฟล์ไหน|ตรงไหน)/i.test(normalized) ||
@@ -183,7 +183,7 @@ export class IntentRouterService {
       /(?:refactor|ปรับโครงสร้าง|optimi[sz]e).*(?:ควร|เริ่ม|ก่อน|priority|อย่างไร|ยังไง)/i.test(normalized) ||
       /(?:performance|ประสิทธิภาพ|test\s*coverage|coverage).*(?:คอขวด|เพิ่ม|ปรับ|ขาด|ตรงไหน|จุดไหน)/i.test(normalized) ||
       /(?:tests?|การทดสอบ).*(?:ขาด|เพิ่ม|ครอบคลุม|coverage|กรณี|case)/i.test(normalized) ||
-      /(?:ฝั่ง\s*)?(?:admin|member|user|ผู้ใช้|แอดมิน).*(?:ทำอะไร|ทำอะไรได้|ความสามารถ|feature|ใช้งาน)/i.test(normalized) ||
+      /(?:ฝั่ง\s*)?(?:admin|member|user|ผู้ใช้|แอดมิน).*(?:ทำอะไร|ทำอะไรได้|ความสามารถ|features?|ฟีเจอร์|ใช้งาน)/i.test(normalized) ||
       /(?:จากที่|ทั้งหมด|ภาพรวม).*(?:วิเคราะห์|สรุป).*(?:ข้อเสนอ|ปรับปรุง|priority|แก้)/i.test(normalized) ||
       /(?:ถ้า|หาก).*(?:รองรับ|เพิ่ม|เปลี่ยน|ย้าย).*(?:ควร|ต้อง).*(?:แก้|ปรับ|เปลี่ยน)/i.test(normalized) ||
       /(?:ถ้า|หาก).*(?:timeout|ล้มเหลว|error|ผิดพลาด).*(?:ระบบ|แอป|โค้ด).*(?:ทำอะไร|เกิดอะไร)/i.test(normalized)

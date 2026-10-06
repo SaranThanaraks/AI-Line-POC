@@ -433,7 +433,7 @@ export class GitHubService {
       return false;
     }
     return (
-      /(?:ทำอะไรได้บ้าง|ความสามารถ|features?|capabilit(?:y|ies)|รองรับอะไร)/i.test(question) ||
+      /(?:ทำอะไรได้บ้าง|ความสามารถ|ฟีเจอร์|features?|capabilit(?:y|ies)|รองรับอะไร)/i.test(question) ||
       /(?:มี|บอก|สรุป)\s*(?:functions?|ฟังก์ชัน)\s*(?:อะไร)?\s*(?:บ้าง|หลัก)?/i.test(question)
     );
   }
@@ -627,7 +627,7 @@ export class GitHubService {
         keywords: ["test", "assert", "acceptance", "happy-flow"],
       },
       {
-        when: /(?:ทำอะไรได้บ้าง|ความสามารถ|features?|capabilit(?:y|ies)|มี\s*(?:functions?|ฟังก์ชัน))/i,
+        when: /(?:ทำอะไรได้บ้าง|ความสามารถ|ฟีเจอร์|features?|capabilit(?:y|ies)|มี\s*(?:functions?|ฟังก์ชัน))/i,
         keywords: ["signupMember", "loginMember", "listBooks", "createBook", "borrowBook", "getMemberLoans", "getAdminLoans", "markLoanReturned"],
       },
       {

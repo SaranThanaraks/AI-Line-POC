@@ -1122,7 +1122,7 @@ export class HuggingFaceService {
       return false;
     }
     return (
-      /(?:ทำอะไรได้บ้าง|ความสามารถ|features?|capabilit(?:y|ies)|รองรับอะไร)/i.test(message) ||
+      /(?:ทำอะไรได้บ้าง|ความสามารถ|ฟีเจอร์|features?|capabilit(?:y|ies)|รองรับอะไร)/i.test(message) ||
       /(?:มี|บอก|สรุป)\s*(?:functions?|ฟังก์ชัน)\s*(?:อะไร)?\s*(?:บ้าง|หลัก)?/i.test(message)
     );
   }

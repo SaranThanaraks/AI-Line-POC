@@ -352,7 +352,7 @@ export class BotService {
 
   private isNaturalRepoListRequest(message: string): boolean {
     const lower = message.toLowerCase();
-    if (/(?:functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|feature|ความสามารถ|business|architecture|code|โค้ด)/i.test(lower)) {
+    if (/(?:functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|features?|ฟีเจอร์|ความสามารถ|business|architecture|code|โค้ด)/i.test(lower)) {
       return false;
     }
     const mentionsRepo = /\b(repos?|repositories|repository)\b/i.test(lower) ||
