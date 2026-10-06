@@ -21,5 +21,6 @@ Rubric ต่อคำตอบมี 6 ด้าน ด้านละ 0–5 �
 - Round 4–11: รอบพัฒนาแบบ iterative เก็บ raw transcript เพื่อย้อนดู regression เช่น GitHub fetch ชั่วคราวล้มเหลว, validator ตีความ `LINE -` ผิด, README context ไม่ครบ และโมเดลตอบ business flow ยาวเกินไป
 - Round 12: candidate แรกที่ผ่าน independent judge ที่ 178/180 หลังเพิ่ม evidence allowlist, retry, route-specific retrieval, structured overview/tech stack/business flow และ deterministic clarification เมื่อชื่อ component กำกวม
 - Round 13: final regression ผ่าน 179/180 หลังตัด Wrangler ที่ซ้ำและเพิ่ม `evidenceExcerptSha256` เพื่อยืนยัน excerpt ที่เข้าสู่ context โดยไม่เก็บ source code
+- `cmdtestv2-agent-evaluation.md`: การทดสอบสนทนาต่อเนื่องกับ repo ระบบห้องสมุดโดย agent แยกบทบาทเป็น ground-truth, interviewer และ judge ครอบคลุม function inventory, workflow, business rules, architecture, style, security, refactor และ test gaps
 
 ไฟล์ `round-N.json` เก็บคำถามและคำตอบเต็มพร้อม repo, branch, routing, evidence paths และเวลา โดยไม่บันทึก secret ส่วน `round-N-runner.log` เก็บเฉพาะเหตุผลที่ grounding validator ปฏิเสธคำตอบในรอบนั้น ตั้งแต่ Round 13 มี `evidenceExcerptSha256` ซึ่งเป็น hash ของเนื้อหาส่วนที่ส่งเข้า context ไม่ใช่ hash ของ full Git blob

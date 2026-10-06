@@ -70,6 +70,16 @@ export class IntentRouterService {
       .replace(/[!,.?？。]+$/g, "")
       .trim();
 
+    if (/^(?:สวัสดี|หวัดดี|ดี)(?:ครับ|ค่ะ|คะ|คับ)?\s+(?:คุณ)?(?:ช่วย|ทำ)(?:อะไร)?(?:ได้)?(?:บ้าง)?/i.test(normalized)) {
+      return [
+        "สวัสดีครับ 👋 ผมเป็น AI developer assistant",
+        "• ตอบคำถาม programming และ tech stack",
+        "• อ่าน repo เพื่ออธิบาย project, architecture และ business logic",
+        "• review bug, security, performance และ test coverage",
+        "• แนะนำการแก้หรือ refactor พร้อมอ้างอิงไฟล์",
+      ].join("\n");
+    }
+
     if (
       /^(?:สวัสดี|หวัดดี|ดี)(?:ครับ|ค่ะ|คะ|คับ|จ้า|จ๊ะ)?$/.test(normalized) ||
       /^(?:hi|hello|hey|good\s+(?:morning|afternoon|evening))$/.test(normalized)
@@ -153,18 +163,28 @@ export class IntentRouterService {
 
     return (
       /(?:service|services|controller|module|component|endpoint|api|worker|function|class|ฟังก์ชัน|คลาส|โมดูล|เซอร์วิส)\s*(?:นี้)?\s*(?:ใช้ทำอะไร|เอาไว้ทำอะไร|ทำหน้าที่อะไร|มีหน้าที่อะไร|ทำอะไร)/i.test(normalized) ||
+      /(?:มี|แสดง|บอก|สรุป|list|show)\s*(?:รายชื่อ)?\s*(?:functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|เอ็นด์พอยต์)\s*(?:อะไร|ไหน)?\s*(?:บ้าง|ทั้งหมด)?/i.test(normalized) ||
+      /(?:functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|เอ็นด์พอยต์)\s*(?:มี)?\s*(?:อะไร|ไหน)\s*(?:บ้าง|ทั้งหมด)/i.test(normalized) ||
       /(?:เป็น)?(?:ระบบ|แอป|application|โปรแกรม|โปรเจกต์|โปรเจค|project|repo|repository)\s*(?:นี้)?\s*(?:เป็นอะไร|ทำอะไร|ใช้ทำอะไร|เอาไว้ทำอะไร|เกี่ยวกับอะไร)/i.test(normalized) ||
       /(?:entry\s*point|จุดเริ่มต้น).*(?:อยู่ไหน|ไฟล์ไหน|ตรงไหน)/i.test(normalized) ||
       /(?:ทำไม|เพราะอะไร).*(?:เลือก|ใช้).*(?:cloudflare|framework|library|database|runtime|worker)/i.test(normalized) ||
       /(?:dependencies?|dependency|แพ็กเกจ|package).*(?:สำคัญ|ใช้อยู่|มีอะไร|ตัวไหน)/i.test(normalized) ||
       /(?:deploy|deployment).*(?:ด้วยอะไร|ยังไง|อย่างไร|ที่ไหน)/i.test(normalized) ||
-      /(?:tech\s*stack|techstack|technology\s*stack|เทค\s*สแตก|architecture|สถาปัตยกรรม).*(?:ใช้|มี|เป็นยังไง|อย่างไร|อะไรบ้าง)/i.test(normalized) ||
+      /(?:tech\s*stack|techstack|technology\s*stack|เทค\s*สแตก|architecture|สถาปัตยกรรม).*(?:ใช้|มี|เป็นยังไง|เป็นแบบไหน|อย่างไร|อะไรบ้าง)/i.test(normalized) ||
+      /(?:code\s*style|coding\s*style|design\s*patterns?|รูปแบบการเขียน|สไตล์การเขียน|style\s*การเขียน).*(?:เป็น|ใช้|ยังไง|อย่างไร|อะไรบ้าง|ล่ะ)?/i.test(normalized) ||
       /(?:business\s*logic|logic\s*ธุรกิจ|ลอจิก(?:ทาง)?ธุรกิจ).*(?:หลัก|ทำงาน|เป็นยังไง|อย่างไร|มีอะไร)/i.test(normalized) ||
+      /(?:กฎ|เงื่อนไข|rules?)\s*(?:ทาง)?\s*(?:ธุรกิจ|business)?\s*(?:มี|คือ|อะไร|อย่างไร|ยังไง)/i.test(normalized) ||
       /(?:flow|data\s*flow|control\s*flow|ลำดับการทำงาน).*(?:ตั้งแต่|ถึง|ของระบบ|ในระบบ|เป็นยังไง)/i.test(normalized) ||
+      /(?:ยืม|คืน|borrow|return|signup|login|ล็อกอิน|สมัคร).*(?:ทำงาน|flow|ขั้นตอน|บันทึก|กฎ|rule|ยังไง|อย่างไร)/i.test(normalized) ||
       /(?:github\s*token|line\s*webhook|reply\s*token|signature|cloudflare\s*kv|repo\s*state).*(?:ใช้|เก็บ|ทำงาน|ตรวจ|ตอนไหน|ที่ไหน)/i.test(normalized) ||
+      /(?:auth|authentication|authorization|login|token|cookie|localstorage).*(?:ปลอดภัย|security|risk|เสี่ยง|ทำงาน|ยังไง|อย่างไร)/i.test(normalized) ||
       /(?:มี|หา|ตรวจ|เช็ก|check|review|รีวิว).*(?:bugs?|security\s*risk|ช่องโหว่|ความเสี่ยง|คอขวด|bottleneck)/i.test(normalized) ||
       /(?:ควร|ช่วย|แนะนำ).*(?:refactor|แก้|ปรับ|optimi[sz]e).*(?:ส่วนไหน|ตรงไหน|จุดไหน|ไฟล์ไหน|อย่างไร|ยังไง)?/i.test(normalized) ||
+      /(?:refactor|ปรับโครงสร้าง|optimi[sz]e).*(?:ควร|เริ่ม|ก่อน|priority|อย่างไร|ยังไง)/i.test(normalized) ||
       /(?:performance|ประสิทธิภาพ|test\s*coverage|coverage).*(?:คอขวด|เพิ่ม|ปรับ|ขาด|ตรงไหน|จุดไหน)/i.test(normalized) ||
+      /(?:tests?|การทดสอบ).*(?:ขาด|เพิ่ม|ครอบคลุม|coverage|กรณี|case)/i.test(normalized) ||
+      /(?:ฝั่ง\s*)?(?:admin|member|user|ผู้ใช้|แอดมิน).*(?:ทำอะไร|ทำอะไรได้|ความสามารถ|feature|ใช้งาน)/i.test(normalized) ||
+      /(?:จากที่|ทั้งหมด|ภาพรวม).*(?:วิเคราะห์|สรุป).*(?:ข้อเสนอ|ปรับปรุง|priority|แก้)/i.test(normalized) ||
       /(?:ถ้า|หาก).*(?:รองรับ|เพิ่ม|เปลี่ยน|ย้าย).*(?:ควร|ต้อง).*(?:แก้|ปรับ|เปลี่ยน)/i.test(normalized) ||
       /(?:ถ้า|หาก).*(?:timeout|ล้มเหลว|error|ผิดพลาด).*(?:ระบบ|แอป|โค้ด).*(?:ทำอะไร|เกิดอะไร)/i.test(normalized)
     );
@@ -172,7 +192,7 @@ export class IntentRouterService {
 
   private isFollowUp(message: string): boolean {
     if (message.length > 100) return false;
-    return /^(?:แล้ว|แล้วถ้า|แล้วส่วนนี้|ส่วนนี้ล่ะ|ตรงนี้ล่ะ|อันนี้ล่ะ|งั้น|ถ้าอย่างนั้น|ต่อเลย|เป็นระบบใช้ทำอะไร|(?:แล้ว)?มันใช้ทำอะไร|ใช้ทำอะไร|เอาไว้ทำอะไร|สรุปว่าทำอะไร|อธิบาย(?:ให้)?(?:เพิ่ม|สั้น|ละเอียด|ง่าย)|สรุป(?:ให้)?สั้น|สั้นกว่านี้|ขยายความ|มีทางแก้ไหม|แก้ยังไง|ทำยังไงต่อ|มัน(?:ทำงาน|แก้|ปรับ))/i.test(
+    return /^(?:แล้ว|แล้วถ้า|แล้วฝั่ง|แล้วขั้นตอน|แล้วส่วนนี้|ส่วนนี้ล่ะ|ตรงนี้ล่ะ|อันนี้ล่ะ|งั้น|ถ้าอย่างนั้น|ต่อเลย|เป็นระบบใช้ทำอะไร|(?:แล้ว)?มันใช้ทำอะไร|ใช้ทำอะไร|เอาไว้ทำอะไร|สรุปว่าทำอะไร|อธิบาย(?:ให้)?(?:เพิ่ม|สั้น|ละเอียด|ง่าย)|สรุป(?:ให้)?สั้น|สั้นกว่านี้|ขยายความ|มีทางแก้ไหม|แก้ยังไง|ทำยังไงต่อ|มัน(?:ทำงาน|แก้|ปรับ))/i.test(
       message.trim(),
     );
   }

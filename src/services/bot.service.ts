@@ -135,6 +135,8 @@ export class BotService {
       if (error instanceof GitHubApiError) {
         return this.githubCommandError(error, "อ่านโค้ดจาก GitHub ไม่สำเร็จ");
       }
+      const aiFailure = this.aiFailureReply(error);
+      if (aiFailure) return aiFailure;
       throw error;
     }
   }
@@ -152,8 +154,21 @@ export class BotService {
       return await this.ai.answerDeveloperQuestion(question);
     } catch (error: unknown) {
       console.error("Developer question failed", errorMessage(error));
-      throw error;
+      return this.aiFailureReply(error) ?? "ตอบคำถามไม่สำเร็จชั่วคราว กรุณาลองใหม่อีกครั้งครับ";
     }
+  }
+
+  private aiFailureReply(error: unknown): string | null {
+    const message = errorMessage(error);
+    const status = message.match(/Hugging Face request failed \((\d+)\)/)?.[1];
+    if (!status) return null;
+    if (status === "402") {
+      return "AI API quota หมดหรือบัญชียังไม่พร้อมเรียกใช้งานครับ กรุณาเติมเครดิต/ตรวจ billing ของ Hugging Face แล้วลองใหม่ ส่วนคำตอบที่สรุปจากโค้ดโดยตรงยังใช้งานได้ตามปกติ";
+    }
+    if (status === "429") {
+      return "AI API รับคำขอมากเกินไปชั่วคราวครับ กรุณารอสักครู่แล้วลองใหม่ โดย repo และ branch ที่เลือกไว้ยังไม่หาย";
+    }
+    return "AI API ตอบไม่สำเร็จชั่วคราวครับ กรุณาลองใหม่ โดย repo และ branch ที่เลือกไว้ยังไม่หาย";
   }
 
   private async rememberMode(
@@ -337,6 +352,9 @@ export class BotService {
 
   private isNaturalRepoListRequest(message: string): boolean {
     const lower = message.toLowerCase();
+    if (/(?:functions?|methods?|classes?|components?|endpoints?|apis?|ฟังก์ชัน|เมธอด|คลาส|คอมโพเนนต์|feature|ความสามารถ|business|architecture|code|โค้ด)/i.test(lower)) {
+      return false;
+    }
     const mentionsRepo = /\b(repos?|repositories|repository)\b/i.test(lower) ||
       /(รีโป|เรโป|โปรเจกต์)/.test(lower);
     return mentionsRepo && /(มี.*อะไร|อะไร.*บ้าง|ทั้งหมด|รายชื่อ|list|show|what|which)/i.test(lower);

@@ -293,6 +293,244 @@ test("known registration README renders its concrete user and admin workflow", a
   }
 });
 
+test("library project overview is grounded in manifest, UI types, and routes without README", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    throw new Error("model should not be called");
+  }) as typeof fetch;
+
+  try {
+    const service = new HuggingFaceService(config);
+    const answer = await service.answerRepositoryQuestion(
+      "โปรเจคนี้ทำอะไร",
+      [
+        "SELECTED EVIDENCE PATHS:",
+        "package.json",
+        "app/page.tsx",
+        "app/api/books/route.ts",
+        "app/api/borrow/route.ts",
+        "app/api/admin/loans/route.ts",
+        "SELECTED FILE CONTENTS:",
+        "--- FILE: package.json ---",
+        '{"name":"library-lending-system"}',
+        "--- FILE: app/page.tsx ---",
+        "type Book = {}; type Member = {}; type Loan = {}; export default function MemberHome() {}",
+        "--- FILE: app/api/books/route.ts ---",
+        "export async function GET() {} export async function POST() {}",
+        "--- FILE: app/api/borrow/route.ts ---",
+        "import { borrowBook } from '../../../lib/libraryService'; export async function POST() {}",
+        "--- FILE: app/api/admin/loans/route.ts ---",
+        "import { getAdminLoans } from '../../../../lib/libraryService'; export async function GET() {}",
+      ].join("\n"),
+    );
+
+    assert.match(answer, /เว็บระบบห้องสมุดสำหรับยืมหนังสือ/);
+    assert.match(answer, /สมาชิกสมัคร\/ล็อกอิน/);
+    assert.match(answer, /app\/api\/borrow\/route\.ts/);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("member capability follow-up answers the selected role instead of repeating overview", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    throw new Error("model should not be called");
+  }) as typeof fetch;
+
+  try {
+    const service = new HuggingFaceService(config);
+    const answer = await service.answerRepositoryQuestion(
+      "ผู้ใช้ทั่วไปทำอะไรได้บ้างในระบบนี้",
+      [
+        "SELECTED EVIDENCE PATHS:",
+        "app/page.tsx",
+        "app/api/loans/borrow/route.ts",
+        "SELECTED FILE CONTENTS:",
+        "--- FILE: app/page.tsx ---",
+        "async function signup() {} async function login() {} async function borrow() {} const loans = []; const books = [];",
+        "--- FILE: app/api/loans/borrow/route.ts ---",
+        "export async function POST() { return borrowBook(); }",
+      ].join("\n"),
+    );
+
+    assert.match(answer, /สมัคร\/ล็อกอิน/);
+    assert.match(answer, /ส่งคำขอยืม/);
+    assert.match(answer, /app\/page\.tsx/);
+    assert.doesNotMatch(answer, /ส่วนแอดมิน/);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("bare function follow-up means project capabilities unless code symbols are explicit", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    throw new Error("model should not be called");
+  }) as typeof fetch;
+
+  try {
+    const service = new HuggingFaceService(config);
+    const answer = await service.answerRepositoryQuestion(
+      "มี function อะไรบ้าง",
+      [
+        "SELECTED EVIDENCE PATHS:",
+        "app/page.tsx",
+        "app/admin/page.tsx",
+        "lib/libraryService.ts",
+        "lib/loanRules.ts",
+        "SELECTED FILE CONTENTS:",
+        "--- FILE: app/page.tsx ---",
+        "signup login borrow books loans",
+        "--- FILE: app/admin/page.tsx ---",
+        "admin overdue return book",
+        "--- FILE: lib/libraryService.ts ---",
+        "export async function signupMember() {} export async function loginMember() {} export async function borrowBook() {} export async function getMemberLoans() {} export async function getAdminLoans() {} export async function markLoanReturned() {}",
+        "--- FILE: lib/loanRules.ts ---",
+        "export function calculateFine() {}",
+      ].join("\n"),
+    );
+
+    assert.match(answer, /ความสามารถของโปรเจกต์/);
+    assert.match(answer, /สมัคร\/ล็อกอิน/);
+    assert.match(answer, /คำนวณวันครบกำหนด\/ค่าปรับ/);
+    assert.doesNotMatch(answer, /ฟังก์ชันที่พบใน source/);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("function inventory is extracted from repository source without model guesses", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    throw new Error("model should not be called");
+  }) as typeof fetch;
+
+  try {
+    const service = new HuggingFaceService(config);
+    const answer = await service.answerRepositoryQuestion(
+      "มี function อะไรบ้าง ขอชื่อ function จริงในไฟล์ source",
+      [
+        "SELECTED EVIDENCE PATHS:",
+        "lib/libraryService.ts",
+        "app/api/books/route.ts",
+        "app/page.tsx",
+        "SELECTED FILE CONTENTS:",
+        "--- FILE: lib/libraryService.ts ---",
+        "import { query } from './db';",
+        "",
+        "export async function listBooks() {} export async function borrowBook() {}",
+        "--- FILE: app/api/books/route.ts ---",
+        "export async function GET() {} export async function POST() {}",
+        "--- FILE: app/page.tsx ---",
+        "async function api() {} function formatDate() {} export default function MemberHome() {}",
+      ].join("\n"),
+    );
+
+    assert.match(answer, /lib\/libraryService\.ts/);
+    assert.match(answer, /`listBooks\(\)`/);
+    assert.match(answer, /`borrowBook\(\)`/);
+    assert.match(answer, /app\/api\/books\/route\.ts/);
+    assert.match(answer, /`GET\(\)`/);
+    assert.doesNotMatch(answer, /sin\(\)|cos\(\)|print\(\)/);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("layered Next.js architecture is composed from concrete boundaries without model guesses", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    throw new Error("model should not be called");
+  }) as typeof fetch;
+
+  try {
+    const service = new HuggingFaceService(config);
+    const answer = await service.answerRepositoryQuestion(
+      "architecture เป็นแบบไหน",
+      [
+        "SELECTED EVIDENCE PATHS:",
+        "package.json",
+        "app/page.tsx",
+        "lib/libraryService.ts",
+        "lib/db.ts",
+        "SELECTED FILE CONTENTS:",
+        "--- FILE: package.json ---",
+        '{"dependencies":{"next":"15.0.0"}}',
+        "--- FILE: app/page.tsx ---",
+        "export default function Page() {}",
+        "--- FILE: lib/libraryService.ts ---",
+        "export async function listBooks() {}",
+        "--- FILE: lib/db.ts ---",
+        "export async function query() {}",
+      ].join("\n"),
+    );
+    assert.match(answer, /layered modular monolith/);
+    assert.match(answer, /app\/page\.tsx/);
+    assert.match(answer, /lib\/libraryService\.ts/);
+    assert.match(answer, /lib\/db\.ts/);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("borrow workflow is traced across route, service, rules, database, and UI", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    throw new Error("model should not be called");
+  }) as typeof fetch;
+
+  try {
+    const service = new HuggingFaceService(config);
+    const answer = await service.answerRepositoryQuestion(
+      "การยืมทำงานยังไง",
+      [
+        "SELECTED EVIDENCE PATHS:",
+        "app/page.tsx",
+        "app/api/loans/borrow/route.ts",
+        "lib/libraryService.ts",
+        "lib/loanRules.ts",
+        "lib/db.ts",
+        "SELECTED FILE CONTENTS:",
+        "--- FILE: app/page.tsx ---",
+        "await api('/api/loans/borrow', { body: JSON.stringify({ bookId }) });",
+        "--- FILE: app/api/loans/borrow/route.ts ---",
+        "export async function POST() { return borrowBook(); }",
+        "--- FILE: lib/libraryService.ts ---",
+        "export async function borrowBook() { await query('BEGIN'); }",
+        "--- FILE: lib/loanRules.ts ---",
+        "export function dueDateForCategory() {}",
+        "--- FILE: lib/db.ts ---",
+        "export async function query() {}",
+      ].join("\n"),
+    );
+    assert.match(answer, /app\/api\/loans\/borrow\/route\.ts/);
+    assert.match(answer, /borrowBook\(\)/);
+    assert.match(answer, /transaction\/lock/);
+    assert.match(answer, /lib\/db\.ts/);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("known LINE repository flow renders from selected source evidence", async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;

@@ -58,6 +58,21 @@ test("general developer questions do not send repository context", async () => {
   assert.equal(writes[0].lastMode, "general");
 });
 
+test("AI quota errors return an actionable LINE reply instead of throwing", async () => {
+  const bot = new BotService(
+    {} as never,
+    {
+      answerDeveloperQuestion: async () => {
+        throw new Error("Hugging Face request failed (402)");
+      },
+    } as never,
+    { get: async () => null } as never,
+  );
+  const answer = await bot.createReply("JWT คืออะไร", "line-user");
+  assert.match(answer as string, /AI API quota/);
+  assert.match(answer as string, /Hugging Face/);
+});
+
 test("project questions load repository context", async () => {
   const { bot, calls, writes } = createBot();
   const answer = await bot.createReply("ระบบนี้ใช้ tech stack อะไร", "line-user");
@@ -97,6 +112,34 @@ test("selected repository component questions load code context", async () => {
   assert.deepEqual(calls, [
     "github:Service ใช้ทำอะไร",
     "repository:Service ใช้ทำอะไร",
+  ]);
+});
+
+test("repository symbol inventory questions keep reading the selected repo", async () => {
+  const { bot, calls, writes } = createBot({
+    ...initialState,
+    lastMode: "repository",
+    lastQuestion: "โปรเจคนี้ทำอะไร",
+  });
+  await bot.createReply("มี function อะไรบ้าง", "line-user");
+  assert.deepEqual(calls, [
+    "github:มี function อะไรบ้าง",
+    "repository:มี function อะไรบ้าง",
+  ]);
+  assert.equal(writes[0].lastMode, "repository");
+});
+
+test("detailed function inventory is not mistaken for a repository-list command", async () => {
+  const { bot, calls } = createBot({
+    ...initialState,
+    lastMode: "repository",
+    lastQuestion: "โปรเจกต์นี้ทำอะไร",
+  });
+  const question = "มี function หลักอะไรบ้างในโปรเจกต์นี้ ขอชื่อ function จริงพร้อมหน้าที่";
+  await bot.createReply(question, "line-user");
+  assert.deepEqual(calls, [
+    `github:${question}`,
+    `repository:${question}`,
   ]);
 });
 

@@ -18,6 +18,18 @@ const files: GitHubTreeItem[] = [
   "src/services/intent-router.service.ts",
   "src/utils.ts",
   "test/bot-routing.test.ts",
+  "app/page.tsx",
+  "app/admin/page.tsx",
+  "app/api/books/route.ts",
+  "app/api/loans/borrow/route.ts",
+  "app/api/admin/loans/[loanId]/return/route.ts",
+  "lib/libraryService.ts",
+  "lib/loanRules.ts",
+  "lib/auth.ts",
+  "lib/http.ts",
+  "lib/db.ts",
+  "scripts/acceptance-cases.mjs",
+  "scripts/happy-flow.mjs",
 ].map((path) => ({ path, type: "blob", size: 1_000 }));
 
 function select(question: string): string[] {
@@ -111,4 +123,43 @@ test("only successfully loaded files become evidence paths", () => {
     ].join("\n")),
     ["README.md", "src/index.ts"],
   );
+});
+
+test("symbol inventory retrieval prioritizes implementation source", () => {
+  const selected = select("มี function อะไรบ้าง ขอชื่อ function จริงในไฟล์ source");
+  assert.ok(selected.includes("lib/libraryService.ts"));
+  assert.ok(selected.includes("app/api/books/route.ts"));
+  assert.ok(selected.includes("app/page.tsx"));
+  assert.equal(selected[0], "lib/libraryService.ts");
+  assert.ok(!selected.includes("package.json"));
+});
+
+test("bare function follow-up retrieves project capability evidence", () => {
+  const selected = select("มี function อะไรบ้าง");
+  assert.ok(selected.includes("app/page.tsx"));
+  assert.ok(selected.includes("app/admin/page.tsx"));
+  assert.ok(selected.includes("lib/libraryService.ts"));
+  assert.ok(selected.includes("lib/loanRules.ts"));
+});
+
+test("domain workflow retrieval selects route, rules, service, and persistence", () => {
+  const selected = select("การยืมทำงานยังไง ตั้งแต่หน้า UI ถึง database");
+  assert.ok(selected.includes("app/api/loans/borrow/route.ts"));
+  assert.ok(selected.includes("lib/libraryService.ts"));
+  assert.ok(selected.includes("lib/loanRules.ts"));
+  assert.ok(selected.includes("lib/db.ts"));
+});
+
+test("security review retrieval prioritizes auth boundaries", () => {
+  const selected = select("auth ปลอดภัยไหม มี security risk ตรงไหน");
+  assert.ok(selected.includes("lib/auth.ts"));
+  assert.ok(selected.includes("lib/http.ts"));
+  assert.ok(selected.includes("app/page.tsx"));
+});
+
+test("test-gap retrieval includes existing suites and package scripts", () => {
+  const selected = select("test ยังขาดอะไร");
+  assert.ok(selected.includes("package.json"));
+  assert.ok(selected.includes("scripts/acceptance-cases.mjs"));
+  assert.ok(selected.includes("scripts/happy-flow.mjs"));
 });
