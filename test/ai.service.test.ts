@@ -108,6 +108,8 @@ test("repository questions always call the model without category templates", as
     assert.match(prompt, /unrelated request/i);
     assert.match(prompt, /current question is authoritative/i);
     assert.match(prompt, /broad question such as what Service/i);
+    assert.match(prompt, /primary source of truth/i);
+    assert.match(prompt, /could not be verified from the repository/i);
     assert.match(prompt, /Never print or repeat any Markdown/i);
     assert.match(prompt, /under 1,000 characters/i);
     assert.match(requestBody?.messages[1].content ?? "", /USER QUESTION:\nมีฟีเจอร์อะไรบ้าง/);
