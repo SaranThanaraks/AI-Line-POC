@@ -34,7 +34,7 @@ AI_PROVIDER=gemini
 
 GEMINI_API_KEY=...
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
-GEMINI_MODEL=gemini-3.6-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 GEMINI_REASONING_EFFORT=low
 
 HF_TOKEN=hf_...
@@ -132,8 +132,11 @@ Click **Verify**, then enable **Use webhook**.
 
 After selecting a repository and branch, send a normal message to ask about the
 code. Repository and branch selection is remembered per LINE conversation.
-Repository retrieval reads Markdown content only from `README.md`; internal
+Repository retrieval reads the permitted Markdown content internally; internal
 guides and all other `.md` files are excluded from model context.
+LINE answers use the loaded files as internal evidence. They are concise by
+default, show non-Markdown source paths only when requested, and never print Markdown
+filenames or paths even when asked directly.
 
 ## Commands
 

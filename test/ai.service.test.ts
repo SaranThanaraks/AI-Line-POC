@@ -37,7 +37,7 @@ test("Gemini OpenAI-compatible endpoint uses a Bearer API key", async () => {
       ...config,
       baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
       token: "gemini-test-key",
-      model: "gemini-3.6-flash",
+      model: "gemini-3.5-flash-lite",
       reasoningEffort: "low",
     });
     await service.answerDeveloperQuestion("Explain this API");
@@ -89,7 +89,7 @@ test("repository questions always call the model without category templates", as
     calls += 1;
     requestBody = JSON.parse(String(init?.body));
     return Response.json({
-      choices: [{ message: { content: "มีฟีเจอร์ช่วยอ่าน source code ตาม `README.md` ครับ" } }],
+      choices: [{ message: { content: "มีฟีเจอร์ช่วยเลือก repo และอ่าน source code เพื่ออธิบายโปรเจกต์ครับ" } }],
     });
   }) as typeof fetch;
 
@@ -99,7 +99,7 @@ test("repository questions always call the model without category templates", as
       repositoryContext,
     );
 
-    assert.match(answer, /README\.md/);
+    assert.doesNotMatch(answer, /README\.md/);
     assert.equal(calls, 1);
     assert.equal(requestBody?.temperature, 0.25);
     const prompt = requestBody?.messages[0].content ?? "";
@@ -108,6 +108,8 @@ test("repository questions always call the model without category templates", as
     assert.match(prompt, /unrelated request/i);
     assert.match(prompt, /current question is authoritative/i);
     assert.match(prompt, /broad question such as what Service/i);
+    assert.match(prompt, /Never print or repeat any Markdown/i);
+    assert.match(prompt, /under 1,000 characters/i);
     assert.match(requestBody?.messages[1].content ?? "", /USER QUESTION:\nมีฟีเจอร์อะไรบ้าง/);
   } finally {
     globalThis.fetch = originalFetch;
@@ -208,7 +210,7 @@ test("repository answers cannot expose the internal POC guide", async () => {
     calls += 1;
     const content = calls === 1
       ? "ระบบทำงานตาม `POC_GUIDE.md`"
-      : "ระบบรับ webhook ตาม `src/index.ts` ครับ";
+      : "ระบบรับ webhook จาก LINE แล้วประมวลผลคำถามด้วย AI ครับ";
     return Response.json({ choices: [{ message: { content } }] });
   }) as typeof fetch;
 
@@ -218,8 +220,8 @@ test("repository answers cannot expose the internal POC guide", async () => {
       repositoryContext,
     );
     assert.doesNotMatch(answer, /POC_GUIDE\.md/i);
-    assert.match(answer, /src\/index\.ts/);
-    assert.equal(calls, 2);
+    assert.doesNotMatch(answer, /src\/index\.ts/);
+    assert.equal(calls, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -241,7 +243,7 @@ test("repository answers retry when they cite a path outside the evidence", asyn
 
   try {
     const answer = await new AiService(config).answerRepositoryQuestion(
-      "Where is the entry point?",
+      "Which file is the entry point?",
       repositoryContext,
     );
     assert.equal(answer, "The entry point is `src/index.ts`.");
@@ -260,7 +262,7 @@ test("AI requests retry one transient provider failure", async () => {
     return calls === 1
       ? new Response(null, { status: 503 })
       : Response.json({
-          choices: [{ message: { content: "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดตาม `README.md` ครับ ถามต่อได้ว่าอยากดู feature หรือ tech stack ส่วนไหน" } }],
+          choices: [{ message: { content: "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ครับ ถามต่อได้ว่าอยากดู feature หรือ tech stack ส่วนไหน" } }],
         });
   }) as typeof fetch;
 
@@ -269,21 +271,19 @@ test("AI requests retry one transient provider failure", async () => {
       "โปรเจกต์นี้ทำอะไร",
       repositoryContext,
     );
-    assert.match(answer, /README\.md/);
+    assert.doesNotMatch(answer, /README\.md/);
     assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
-test("repository factual answers retry when they omit evidence paths", async () => {
+test("repository factual answers do not need visible evidence paths", async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = (async () => {
     calls += 1;
-    const content = calls === 1
-      ? "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ครับ"
-      : "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ตาม `README.md` ครับ ถามต่อได้ว่าอยากดู feature หรือ architecture ส่วนไหน";
+    const content = "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ครับ ถามต่อได้ว่าอยากดู feature หรือ architecture ส่วนไหน";
     return Response.json({ choices: [{ message: { content } }] });
   }) as typeof fetch;
 
@@ -292,8 +292,121 @@ test("repository factual answers retry when they omit evidence paths", async () 
       "โปรเจกต์นี้ทำอะไร",
       repositoryContext,
     );
-    assert.match(answer, /README\.md/);
-    assert.equal(calls, 2);
+    assert.doesNotMatch(answer, /README\.md/);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("repository paths are removed unless the user asks for them", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    const content = calls === 1
+      ? "โปรเจกต์นี้ช่วยอ่านโค้ดผ่าน LINE ตาม `README.md` ครับ"
+      : "โปรเจกต์นี้ช่วยอ่านและอธิบายโค้ดผ่าน LINE ครับ ถามต่อได้ว่าอยากดูส่วนไหน";
+    return Response.json({ choices: [{ message: { content } }] });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "โปรเจกต์นี้ทำอะไร",
+      repositoryContext,
+    );
+    assert.equal(answer, "โปรเจกต์นี้ช่วยอ่านโค้ดผ่าน LINE ตาม เอกสาร ครับ");
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("repository paths are allowed when the user explicitly asks for files", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    return Response.json({
+      choices: [{ message: { content: "จุดเริ่มต้นของ Worker อยู่ที่ `src/index.ts` ครับ" } }],
+    });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "จุดเริ่มต้นของระบบอยู่ไฟล์ไหน",
+      repositoryContext,
+    );
+    assert.match(answer, /src\/index\.ts/);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("Markdown filenames stay hidden even when the user explicitly asks for files", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    const content = calls === 1
+      ? "ข้อมูลภาพรวมอยู่ใน `README.md` ครับ"
+      : "มีเอกสารสรุปภาพรวมโปรเจกต์ที่ระบบอ่านประกอบคำตอบได้ครับ";
+    return Response.json({ choices: [{ message: { content } }] });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "เอกสารภาพรวมอยู่ไฟล์ไหน",
+      repositoryContext,
+    );
+    assert.equal(answer, "ข้อมูลภาพรวมอยู่ใน `เอกสาร` ครับ");
+    assert.doesNotMatch(answer, /README|\.md/i);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("persistent Markdown filenames cannot escape through repository fallback", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    return Response.json({
+      choices: [{ message: { content: "ดู `README\u2060.md` ได้ครับ" } }],
+    });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "มีไฟล์เอกสารอะไรบ้าง",
+      repositoryContext,
+    );
+    assert.doesNotMatch(answer, /README|\.md/i);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("general software answers cannot repeat Markdown filenames", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    const content = calls === 1
+      ? "`README.md` ใช้เก็บคำอธิบายโปรเจกต์"
+      : "เอกสารภาพรวมโปรเจกต์ใช้สรุปวิธีติดตั้งและการใช้งานครับ";
+    return Response.json({ choices: [{ message: { content } }] });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerDeveloperQuestion(
+      "ไฟล์เอกสารภาพรวมโปรเจกต์ใช้ทำอะไร",
+    );
+    assert.doesNotMatch(answer, /README|\.md/i);
+    assert.equal(calls, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -305,8 +418,8 @@ test("broad project overviews are rewritten as a short answer with a follow-up",
   globalThis.fetch = (async () => {
     calls += 1;
     const content = calls === 1
-      ? `${"รายละเอียด workflow จาก `README.md` ".repeat(35)}ถามต่อได้ครับ`
-      : "โปรเจกต์นี้เป็นผู้ช่วยอ่านและวิเคราะห์โค้ดผ่าน LINE ตาม `README.md` ครับ ถามต่อได้ว่าอยากดู feature, architecture หรือ tech stack ส่วนไหน";
+      ? `${"รายละเอียด workflow การอ่านและวิเคราะห์โค้ดผ่าน LINE ".repeat(35)}ถามต่อได้ครับ`
+      : "โปรเจกต์นี้เป็นผู้ช่วยอ่านและวิเคราะห์โค้ดผ่าน LINE ครับ ถามต่อได้ว่าอยากดู feature, architecture หรือ tech stack ส่วนไหน";
     return Response.json({ choices: [{ message: { content } }] });
   }) as typeof fetch;
 
@@ -323,10 +436,32 @@ test("broad project overviews are rewritten as a short answer with a follow-up",
   }
 });
 
+test("complete project overviews do not require a follow-up invitation", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    return Response.json({
+      choices: [{ message: { content: "โปรเจกต์นี้เป็นผู้ช่วยให้นักพัฒนาถามและวิเคราะห์โค้ดจาก GitHub ผ่าน LINE ครับ" } }],
+    });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "ระบบนี้ทำอะไรได้",
+      repositoryContext,
+    );
+    assert.match(answer, /ผู้ช่วย/);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("grounded security reviews up to 2,000 characters are accepted", async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
-  const content = `พบความเสี่ยงที่ควรตรวจใน \`src/index.ts\` ครับ\n${"รายละเอียดความเสี่ยงและแนวทางแก้ ".repeat(45)}`;
+  const content = `พบความเสี่ยงด้านการตรวจสิทธิ์และการจัดการ secret ที่ควรทบทวนครับ\n${"รายละเอียดความเสี่ยงและแนวทางแก้ ".repeat(45)}`;
   assert.ok(content.length > 1_200 && content.length < 2_000);
   globalThis.fetch = (async () => {
     calls += 1;
@@ -377,7 +512,7 @@ test("truncated repository output is corrected once", async () => {
     return Response.json({
       choices: [{
         finish_reason: calls === 1 ? "length" : "stop",
-        message: { content: calls === 1 ? "Partial answer" : "Project summary from `README.md`. Ask next about features or architecture." },
+        message: { content: calls === 1 ? "Partial answer" : "This project helps developers inspect and understand repository code through LINE. Ask next about features or architecture." },
       }],
     });
   }) as typeof fetch;
@@ -387,7 +522,7 @@ test("truncated repository output is corrected once", async () => {
       "Summarize the project",
       repositoryContext,
     );
-    assert.equal(answer, "Project summary from `README.md`. Ask next about features or architecture.");
+    assert.equal(answer, "This project helps developers inspect and understand repository code through LINE. Ask next about features or architecture.");
     assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;
@@ -408,7 +543,7 @@ test("two invalid repository answers return a safe fallback without a third call
       repositoryContext,
     );
     assert.match(answer, /cannot answer confidently/i);
-    assert.match(answer, /README\.md/);
+    assert.doesNotMatch(answer, /README|\.md/i);
     assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;

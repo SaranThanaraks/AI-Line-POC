@@ -92,7 +92,7 @@ LineAI/
 5. `GitHubService` โหลด branch, recursive tree และเลือกไฟล์จากคำถามปัจจุบันเท่านั้น ส่วนคำถามก่อนหน้าจะส่งให้โมเดลเป็นบริบทเสริมโดยไม่เปลี่ยนชุดไฟล์ของหัวข้อใหม่
 6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์ โดยคำถามภาพรวม/วัตถุประสงค์จะให้น้ำหนัก `README`, manifest, entry point, route/controller และเอกสาร architecture มากขึ้น
 7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป
-8. `AiService` ส่งคำถามพร้อม scope prompt ไปยัง AI provider ที่เลือก คำตอบเกี่ยวกับ repo ต้องอ้าง path ที่เป็นหลักฐาน แยกข้อเท็จจริงออกจากคำแนะนำ และห้ามแต่งข้อมูลที่ไม่มีใน context
+8. `AiService` ส่งคำถามพร้อม scope prompt ไปยัง AI provider ที่เลือก ใช้ไฟล์ที่โหลดได้เป็นหลักฐานภายใน แยกข้อเท็จจริงออกจากคำแนะนำ และห้ามแต่งข้อมูลที่ไม่มีใน context; คำตอบปกติกระชับ ไม่แสดง path เว้นแต่ผู้ใช้ถาม และไม่แสดงชื่อไฟล์ Markdown แม้ผู้ใช้ถามโดยตรง
 9. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply
 
 ถ้าผู้ใช้ถามเป็นภาษาไทยแต่โมเดลตอบโดยไม่มีภาษาไทยหรือมีอักษรจีน/ญี่ปุ่น/เกาหลีปน ระบบจะ retry หนึ่งครั้งด้วยข้อกำหนดภาษาแบบเข้มงวด
@@ -100,12 +100,14 @@ LineAI/
 ### Retrieval และ grounding ที่ใช้จริง
 
 - คำถาม overview ให้น้ำหนัก README, manifest และ entry point เพื่อให้โมเดลเห็น purpose/feature/workflow ก่อน setup detail
-- คำถามภาพรวม เช่น “โปรเจกต์นี้ทำอะไร” จำกัดไม่เกิน 700 ตัวอักษรและ 3 bullet แล้วชวนผู้ใช้ถามต่อ แทนการแจกแจง workflow/tech stack ทั้งหมดทันที
+- คำถามภาพรวม เช่น “โปรเจกต์นี้ทำอะไร” จำกัดไม่เกิน 700 ตัวอักษรและ 3 bullet แล้วสรุปให้จบในตัวเอง; จะชวนผู้ใช้ถามต่อเมื่อเหมาะสม แทนการแจกแจง workflow/tech stack ทั้งหมดทันที
 - คำถาม tech stack ให้น้ำหนัก `package.json` และ runtime config ส่วน business logic ให้น้ำหนัก entry point, orchestration, state/storage และ integration services
 - คำถาม component กว้างๆ เช่น `Service ใช้ทำอะไร` จะให้น้ำหนัก production service มากกว่า test และให้โมเดลสรุปหน้าที่ของ service layer จากโค้ด แทนการโยนรายชื่อ candidate ให้ผู้ใช้เลือกทันที
 - path จะถูกเพิ่มใน `SELECTED EVIDENCE PATHS` ต่อเมื่อโหลดเนื้อหาไฟล์สำเร็จเท่านั้น path ที่เลือกไว้แต่ fetch ไม่สำเร็จไม่ถือเป็นหลักฐาน
 - GitHub request retry transient network error, HTTP 429 และ 5xx สูงสุด 3 ครั้ง และโหลดไฟล์เป็น batch จำกัด concurrency
-- คำตอบจากโมเดลต้องอ้าง path ใน allowlist, ไม่มี path/เลขบรรทัดแต่ง, ไม่ถูกตัดกลาง, ไม่ยาวหรือซ้ำเกินเกณฑ์ และไม่มี CJK ปนในคำตอบไทย หากไม่ผ่านจะ retry หนึ่งครั้งแล้วใช้ safe fallback
+- คำตอบปกติไม่เกิน 1,000 ตัวอักษรและ 3 bullet; เมื่อขอรายละเอียดจึงขยายได้ไม่เกิน 2,000 ตัวอักษร
+- ชื่อไฟล์ Markdown และ path ที่ลงท้าย `.md` ห้ามปรากฏในคำตอบทุกกรณี ทั้งการถาม repo และถาม software ทั่วไป แม้ผู้ใช้ขอชื่อไฟล์ ระบบยังอ่านเอกสารที่อนุญาตเพื่อสรุปเนื้อหาได้
+- path ของไฟล์ชนิดอื่นแสดงได้เฉพาะเมื่อผู้ใช้ถามหาโดยตรงและต้องอยู่ใน allowlist; คำตอบที่มีชื่อไฟล์ Markdown, path แต่ง, เลขบรรทัดแต่ง, ความยาวเกินเกณฑ์ หรือ CJK ปนในคำตอบไทยจะ retry หนึ่งครั้งแล้วใช้ safe fallback
 
 ### การทดสอบคุณภาพแบบหลาย agent
 
@@ -144,7 +146,7 @@ AI_PROVIDER=gemini
 
 GEMINI_API_KEY=...
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
-GEMINI_MODEL=gemini-3.6-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 GEMINI_REASONING_EFFORT=low
 
 HF_TOKEN=hf_...
@@ -170,7 +172,7 @@ GITHUB_TOKEN=github_pat_...
 | `AI_PROVIDER` | ไม่ใช่ secret | เลือก `gemini` หรือ `huggingface`; ถ้าไม่กำหนดจะใช้ `gemini` |
 | `GEMINI_API_KEY` | ใช่ | [Google AI Studio → API Keys](https://aistudio.google.com/api-keys) → สร้าง key สำหรับโปรเจกต์นี้และจำกัดสิทธิ์ให้ใช้ Gemini API เท่านั้น ใช้เป็น Bearer token เรียก Gemini API |
 | `GEMINI_BASE_URL` | ไม่ใช่ secret | OpenAI-compatible endpoint ของ Gemini: `https://generativelanguage.googleapis.com/v1beta/openai` |
-| `GEMINI_MODEL` | ไม่ใช่ secret | Model ID ของ Gemini ที่ส่งใน Chat Completions ปัจจุบันตั้งเป็น `gemini-3.6-flash` |
+| `GEMINI_MODEL` | ไม่ใช่ secret | Model ID ของ Gemini ที่ส่งใน Chat Completions ปัจจุบันตั้งเป็น `gemini-3.5-flash-lite` |
 | `GEMINI_REASONING_EFFORT` | ไม่ใช่ secret | ระดับ thinking ของ Gemini (`minimal`, `low`, `medium`, `high`) ค่าเริ่มต้นของ POC คือ `low` เพื่อลด latency และไม่ให้ thinking ใช้ output-token budget จนคำตอบถูกตัด |
 | `HF_TOKEN` | ใช่ | [Hugging Face → Access Tokens](https://huggingface.co/settings/tokens) → สร้าง fine-grained token ที่มีสิทธิ์เรียก Inference Providers |
 | `HF_BASE_URL` | ไม่ใช่ secret | OpenAI-compatible router ของ Hugging Face: `https://router.huggingface.co/v1` |
@@ -343,7 +345,7 @@ Natural-language parser ใช้ deterministic rules เฉพาะคำส�
 - retry/backoff สำหรับ GitHub transient network error, HTTP 429 และ 5xx
 - ไม่ถือ path เป็นหลักฐานจนกว่าจะโหลด file content สำเร็จ
 - ไม่โหลดไฟล์ `.md` อื่นนอกจาก `README.md` และกรองลิงก์จาก README ที่อ้างถึง Markdown file อื่นก่อนสร้าง context
-- ตรวจ path allowlist, output truncation, ความยาว, CJK และเลขบรรทัดก่อนส่งคำตอบเกี่ยวกับ repo
+- ตรวจ path allowlist, ชื่อไฟล์ Markdown, output truncation, ความยาว, CJK และเลขบรรทัดก่อนส่งคำตอบเกี่ยวกับ repo
 - จำกัดจำนวนและขนาด source files ที่อ่าน
 - บอกโมเดลให้ถือว่า repository content เป็น untrusted data และไม่ทำตามคำสั่งในไฟล์
 - GitHub integration ใช้สิทธิ์ read-only ตามหลัก least privilege

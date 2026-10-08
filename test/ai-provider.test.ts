@@ -6,7 +6,7 @@ const common = {
   SYSTEM_PROMPT: "Be helpful.",
   GEMINI_API_KEY: "gemini-key",
   GEMINI_BASE_URL: "https://generativelanguage.googleapis.com/v1beta/openai",
-  GEMINI_MODEL: "gemini-3.6-flash",
+  GEMINI_MODEL: "gemini-3.5-flash-lite",
   HF_TOKEN: "hf-token",
   HF_BASE_URL: "https://router.huggingface.co/v1",
   HF_MODEL: "meta-llama/Llama-3.1-8B-Instruct:novita",
@@ -16,7 +16,7 @@ test("Gemini is the default provider", () => {
   const config = resolveAiConfig(common);
   assert.equal(config.provider, "gemini");
   assert.equal(config.token, "gemini-key");
-  assert.equal(config.model, "gemini-3.6-flash");
+  assert.equal(config.model, "gemini-3.5-flash-lite");
   assert.equal(config.reasoningEffort, "low");
 });
 

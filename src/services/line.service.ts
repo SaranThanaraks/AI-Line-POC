@@ -107,9 +107,13 @@ export class LineService {
   }
 
   private preventBareMarkdownAutoLinks(text: string): string {
-    return text.replace(
-      /(^|[\s`'"([{])([a-z0-9_-]+)\.md\b/gim,
-      "$1$2\u2060.md",
+    const withoutInvisibleSeparators = text.replace(/[\u200B-\u200D\u2060\uFEFF]/g, "");
+    const label = /[\u0E00-\u0E7F]/.test(withoutInvisibleSeparators)
+      ? "เอกสาร"
+      : "document";
+    return withoutInvisibleSeparators.replace(
+      /(^|[\s`'"([{])(?:[a-z0-9_.-]+\/)*[a-z0-9_-]+\.md\b/gim,
+      `$1${label}`,
     );
   }
 }
