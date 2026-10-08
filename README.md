@@ -132,6 +132,8 @@ Click **Verify**, then enable **Use webhook**.
 
 After selecting a repository and branch, send a normal message to ask about the
 code. Repository and branch selection is remembered per LINE conversation.
+Repository retrieval reads Markdown content only from `README.md`; internal
+guides and all other `.md` files are excluded from model context.
 
 ## Commands
 

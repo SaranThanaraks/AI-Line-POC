@@ -173,8 +173,53 @@ test("repository scope refusal needs no path citation and is not retried", async
       "พรุ่งนี้ฝนตกไหม",
       repositoryContext,
     );
-    assert.match(answer, /ช่วยเฉพาะเรื่องโปรเจกต์/);
+    assert.equal(answer, "ไม่สามารถตอบได้ครับ");
     assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("general scope refusal is normalized without policy explanation", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async () => Response.json({
+    choices: [{
+      message: {
+        content: "ระบบถูกตั้งค่าให้ปฏิเสธคำถามนอกขอบเขตซอฟต์แวร์ จึงให้สูตรอาหารไม่ได้ครับ",
+      },
+    }],
+  })) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerDeveloperQuestion(
+      "ขอสูตรกะเพราหมูสับ",
+    );
+    assert.equal(answer, "ไม่สามารถตอบได้ครับ");
+    assert.doesNotMatch(answer, /ตั้งค่า|ขอบเขต|สูตรอาหาร/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("repository answers cannot expose the internal POC guide", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    const content = calls === 1
+      ? "ระบบทำงานตาม `POC_GUIDE.md`"
+      : "ระบบรับ webhook ตาม `src/index.ts` ครับ";
+    return Response.json({ choices: [{ message: { content } }] });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "ระบบทำงานอย่างไร",
+      repositoryContext,
+    );
+    assert.doesNotMatch(answer, /POC_GUIDE\.md/i);
+    assert.match(answer, /src\/index\.ts/);
+    assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -215,7 +260,7 @@ test("AI requests retry one transient provider failure", async () => {
     return calls === 1
       ? new Response(null, { status: 503 })
       : Response.json({
-          choices: [{ message: { content: "อธิบายจาก `README.md` ครับ" } }],
+          choices: [{ message: { content: "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดตาม `README.md` ครับ ถามต่อได้ว่าอยากดู feature หรือ tech stack ส่วนไหน" } }],
         });
   }) as typeof fetch;
 
@@ -238,7 +283,7 @@ test("repository factual answers retry when they omit evidence paths", async () 
     calls += 1;
     const content = calls === 1
       ? "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ครับ"
-      : "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ตาม `README.md` ครับ";
+      : "โปรเจกต์นี้เป็นผู้ช่วยอ่านโค้ดผ่าน LINE ตาม `README.md` ครับ ถามต่อได้ว่าอยากดู feature หรือ architecture ส่วนไหน";
     return Response.json({ choices: [{ message: { content } }] });
   }) as typeof fetch;
 
@@ -248,6 +293,30 @@ test("repository factual answers retry when they omit evidence paths", async () 
       repositoryContext,
     );
     assert.match(answer, /README\.md/);
+    assert.equal(calls, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("broad project overviews are rewritten as a short answer with a follow-up", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    const content = calls === 1
+      ? `${"รายละเอียด workflow จาก `README.md` ".repeat(35)}ถามต่อได้ครับ`
+      : "โปรเจกต์นี้เป็นผู้ช่วยอ่านและวิเคราะห์โค้ดผ่าน LINE ตาม `README.md` ครับ ถามต่อได้ว่าอยากดู feature, architecture หรือ tech stack ส่วนไหน";
+    return Response.json({ choices: [{ message: { content } }] });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "โปรเจกต์นี้ทำอะไร",
+      repositoryContext,
+    );
+    assert.ok(answer.length <= 700);
+    assert.match(answer, /ถามต่อ/);
     assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;
@@ -308,7 +377,7 @@ test("truncated repository output is corrected once", async () => {
     return Response.json({
       choices: [{
         finish_reason: calls === 1 ? "length" : "stop",
-        message: { content: calls === 1 ? "Partial answer" : "Complete answer from `README.md`." },
+        message: { content: calls === 1 ? "Partial answer" : "Project summary from `README.md`. Ask next about features or architecture." },
       }],
     });
   }) as typeof fetch;
@@ -318,7 +387,7 @@ test("truncated repository output is corrected once", async () => {
       "Summarize the project",
       repositoryContext,
     );
-    assert.equal(answer, "Complete answer from `README.md`.");
+    assert.equal(answer, "Project summary from `README.md`. Ask next about features or architecture.");
     assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;

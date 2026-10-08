@@ -5,6 +5,7 @@ import type { GitHubTreeItem } from "../src/types";
 
 const files: GitHubTreeItem[] = [
   "README.md",
+  "POC_GUIDE.md",
   "package.json",
   "tsconfig.json",
   "wrangler.jsonc",
@@ -41,6 +42,58 @@ function select(question: string): string[] {
   };
   return selector.selectRelevantFiles(files, question).map((file) => file.path);
 }
+
+test("only README.md is readable Markdown repository evidence", () => {
+  const github = new GitHubService() as unknown as {
+    isReadableSourceFile(candidate: GitHubTreeItem): boolean;
+  };
+
+  assert.equal(
+    github.isReadableSourceFile({ path: "POC_GUIDE.md", type: "blob", size: 1_000 }),
+    false,
+  );
+  assert.equal(
+    github.isReadableSourceFile({ path: "docs/POC_GUIDE.md", type: "blob", size: 1_000 }),
+    false,
+  );
+  assert.equal(
+    github.isReadableSourceFile({ path: "AGENTS.md", type: "blob", size: 1_000 }),
+    false,
+  );
+  assert.equal(
+    github.isReadableSourceFile({ path: "docs/guide.md", type: "blob", size: 1_000 }),
+    false,
+  );
+  assert.equal(
+    github.isReadableSourceFile({ path: "README.md", type: "blob", size: 1_000 }),
+    true,
+  );
+  assert.equal(
+    github.isReadableSourceFile({ path: "docs/README.md", type: "blob", size: 1_000 }),
+    true,
+  );
+  assert.ok(!select("โปรเจกต์นี้ทำอะไร").includes("POC_GUIDE.md"));
+});
+
+test("README context removes references to other Markdown files", () => {
+  const github = new GitHubService() as unknown as {
+    sanitizeReadableContent(content: string, path: string): string;
+  };
+  const sanitized = github.sanitizeReadableContent(
+    [
+      "# Project",
+      "Read README.md first.",
+      "Internal guide: [POC_GUIDE.md](./POC_GUIDE.md)",
+      "Agent rules are in AGENTS.md",
+      "Keep this feature description.",
+    ].join("\n"),
+    "README.md",
+  );
+
+  assert.match(sanitized, /README\.md/);
+  assert.match(sanitized, /feature description/);
+  assert.doesNotMatch(sanitized, /POC_GUIDE\.md|AGENTS\.md/);
+});
 
 test("tech-stack retrieval prioritizes manifests and runtime configuration", () => {
   const selected = select("ระบบนี้ใช้ tech stack อะไร");

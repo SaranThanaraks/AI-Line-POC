@@ -161,6 +161,8 @@ export class GitHubService {
     }
 
     const path = item.path.toLowerCase();
+    const basename = path.split("/").pop() ?? path;
+    if (path.endsWith(".md") && basename !== "readme.md") return false;
     if (
       /(^|\/)(node_modules|vendor|dist|build|coverage|\.git|\.next|target)(\/|$)/.test(path) ||
       /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|composer\.lock|cargo\.lock)$/.test(path)
@@ -572,7 +574,10 @@ export class GitHubService {
             ) {
               return null;
             }
-            const decoded = this.decodeBase64Utf8(contentFile.content);
+            const decoded = this.sanitizeReadableContent(
+              this.decodeBase64Utf8(contentFile.content),
+              contentFile.path,
+            );
             const content = maxCharactersPerFile
               ? this.createFocusedFileExcerpt(
                   decoded,
@@ -683,5 +688,18 @@ export class GitHubService {
       character.charCodeAt(0),
     );
     return new TextDecoder().decode(bytes);
+  }
+
+  private sanitizeReadableContent(content: string, path: string): string {
+    if (!/(?:^|\/)readme\.md$/i.test(path)) return content;
+    return content
+      .split("\n")
+      .filter((line) => {
+        const markdownFiles = line.match(/\b[a-z0-9_-]+\.md\b/gi) ?? [];
+        return markdownFiles.every(
+          (fileName) => fileName.toLowerCase() === "readme.md",
+        );
+      })
+      .join("\n");
   }
 }

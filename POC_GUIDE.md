@@ -20,6 +20,7 @@
 - จำคำถามล่าสุดเพื่อช่วยให้ follow-up เช่น “อธิบายเพิ่ม” มีบริบทต่อเนื่อง
 - จำ repository/branch แยกตาม LINE user, group หรือ room ด้วย Cloudflare KV
 - อ่าน tree ของ repository แล้วเลือกไฟล์ที่เกี่ยวข้องกับคำถาม
+- อ่านไฟล์ Markdown เฉพาะ `README.md`; ไม่ส่งคู่มือภายในหรือไฟล์ `.md` อื่นเข้า model context
 - ส่งบริบทของโค้ดให้ LLM และตอบกลับใน LINE
 - มี Rich Menu 3 รายการ โดยเมนู Database และ UI ยังตอบว่าไม่พร้อมใช้งาน
 
@@ -99,6 +100,7 @@ LineAI/
 ### Retrieval และ grounding ที่ใช้จริง
 
 - คำถาม overview ให้น้ำหนัก README, manifest และ entry point เพื่อให้โมเดลเห็น purpose/feature/workflow ก่อน setup detail
+- คำถามภาพรวม เช่น “โปรเจกต์นี้ทำอะไร” จำกัดไม่เกิน 700 ตัวอักษรและ 3 bullet แล้วชวนผู้ใช้ถามต่อ แทนการแจกแจง workflow/tech stack ทั้งหมดทันที
 - คำถาม tech stack ให้น้ำหนัก `package.json` และ runtime config ส่วน business logic ให้น้ำหนัก entry point, orchestration, state/storage และ integration services
 - คำถาม component กว้างๆ เช่น `Service ใช้ทำอะไร` จะให้น้ำหนัก production service มากกว่า test และให้โมเดลสรุปหน้าที่ของ service layer จากโค้ด แทนการโยนรายชื่อ candidate ให้ผู้ใช้เลือกทันที
 - path จะถูกเพิ่มใน `SELECTED EVIDENCE PATHS` ต่อเมื่อโหลดเนื้อหาไฟล์สำเร็จเท่านั้น path ที่เลือกไว้แต่ fetch ไม่สำเร็จไม่ถือเป็นหลักฐาน
@@ -115,6 +117,8 @@ raw transcript และผล judge อยู่ใน `artifacts/evals/` ร�
 2. ถ้ามี selected repo ให้โหลด context แล้วส่งข้อความปกติทุกแบบเข้า project-scoped AI
 3. ถ้าไม่มี selected repo ให้ส่งเข้า software-scoped AI
 4. ให้ system prompt ของ AI ตัดสินใจตอบทักทาย ตอบเรื่อง software/project หรือปฏิเสธคำถามนอกขอบเขต
+
+คำถามนอกขอบเขตภาษาไทยต้องตอบเพียง `ไม่สามารถตอบได้ครับ` โดยไม่อธิบาย policy/configuration และไม่อ้าง repository file
 
 การให้คะแนน path ภายใน `GitHubService` เป็น retrieval optimization เพื่อเลือกไฟล์ ไม่ใช่ intent gate และไม่ตัดสินว่าผู้ใช้มีสิทธิ์ถามอะไร
 
@@ -338,6 +342,7 @@ Natural-language parser ใช้ deterministic rules เฉพาะคำส�
 - จำกัด timeout ของ LINE loading, GitHub และ LLM requests
 - retry/backoff สำหรับ GitHub transient network error, HTTP 429 และ 5xx
 - ไม่ถือ path เป็นหลักฐานจนกว่าจะโหลด file content สำเร็จ
+- ไม่โหลดไฟล์ `.md` อื่นนอกจาก `README.md` และกรองลิงก์จาก README ที่อ้างถึง Markdown file อื่นก่อนสร้าง context
 - ตรวจ path allowlist, output truncation, ความยาว, CJK และเลขบรรทัดก่อนส่งคำตอบเกี่ยวกับ repo
 - จำกัดจำนวนและขนาด source files ที่อ่าน
 - บอกโมเดลให้ถือว่า repository content เป็น untrusted data และไม่ทำตามคำสั่งในไฟล์
