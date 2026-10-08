@@ -177,7 +177,7 @@ test("repository scope refusal needs no path citation and is not retried", async
       "พรุ่งนี้ฝนตกไหม",
       repositoryContext,
     );
-    assert.equal(answer, "ไม่สามารถตอบได้ครับ");
+    assert.equal(answer, "ขออภัยครับ ผมช่วยได้เฉพาะคำถามด้านโค้ดและซอฟต์แวร์ครับ");
     assert.equal(calls, 1);
   } finally {
     globalThis.fetch = originalFetch;
@@ -198,7 +198,7 @@ test("general scope refusal is normalized without policy explanation", async () 
     const answer = await new AiService(config).answerDeveloperQuestion(
       "ขอสูตรกะเพราหมูสับ",
     );
-    assert.equal(answer, "ไม่สามารถตอบได้ครับ");
+    assert.equal(answer, "ขออภัยครับ ผมช่วยได้เฉพาะคำถามด้านโค้ดและซอฟต์แวร์ครับ");
     assert.doesNotMatch(answer, /ตั้งค่า|ขอบเขต|สูตรอาหาร/);
   } finally {
     globalThis.fetch = originalFetch;

@@ -194,6 +194,14 @@ test("bare function follow-up retrieves project capability evidence", () => {
   assert.ok(selected.includes("lib/loanRules.ts"));
 });
 
+test("member capability questions retrieve role-specific evidence", () => {
+  const selected = select("สมาชิกสามารถทำอะไรได้");
+  assert.ok(selected.includes("app/page.tsx"));
+  assert.ok(selected.includes("app/api/books/route.ts"));
+  assert.ok(selected.includes("lib/libraryService.ts"));
+  assert.ok(!selected.includes("POC_GUIDE.md"));
+});
+
 test("domain workflow retrieval selects route, rules, service, and persistence", () => {
   const selected = select("การยืมทำงานยังไง ตั้งแต่หน้า UI ถึง database");
   assert.ok(selected.includes("app/api/loans/borrow/route.ts"));

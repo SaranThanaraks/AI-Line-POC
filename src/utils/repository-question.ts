@@ -19,6 +19,7 @@ export function isCapabilityQuestion(message: string): boolean {
   const normalized = normalizeRepositoryQuestion(message);
   if (
     /(?:ทำอะไรได้บ้าง|รองรับอะไร)/i.test(message) ||
+    /(?:สมาชิก|ผู้ใช้|user|member|admin|แอดมิน|role|สิทธิ์).*(?:ทำอะไรได้|สามารถทำอะไร|ความสามารถ|สิทธิ์)/i.test(message) ||
     /(?:มี|บอก|สรุป)\s*(?:functions?|ฟังก์ชัน)\s*(?:อะไร)?\s*(?:บ้าง|หลัก)?/i.test(message)
   ) {
     return true;

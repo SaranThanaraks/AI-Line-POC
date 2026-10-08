@@ -120,7 +120,7 @@ raw transcript และผล judge อยู่ใน `artifacts/evals/` ร�
 3. ถ้าไม่มี selected repo ให้ส่งเข้า software-scoped AI
 4. ให้ system prompt ของ AI ตัดสินใจตอบทักทาย ตอบเรื่อง software/project หรือปฏิเสธคำถามนอกขอบเขต
 
-คำถามนอกขอบเขตภาษาไทยต้องตอบเพียง `ไม่สามารถตอบได้ครับ` โดยไม่อธิบาย policy/configuration และไม่อ้าง repository file
+คำถามนอกขอบเขตภาษาไทยให้ตอบสั้นๆ ว่า `ขออภัยครับ ผมช่วยได้เฉพาะคำถามด้านโค้ดและซอฟต์แวร์ครับ` โดยไม่อธิบาย policy/configuration และไม่อ้าง repository file
 
 การให้คะแนน path ภายใน `GitHubService` เป็น retrieval optimization เพื่อเลือกไฟล์ ไม่ใช่ intent gate และไม่ตัดสินว่าผู้ใช้มีสิทธิ์ถามอะไร
 
