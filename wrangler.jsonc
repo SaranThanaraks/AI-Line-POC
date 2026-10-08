@@ -7,6 +7,10 @@
 		"nodejs_compat"
 	],
 	"vars": {
+		"AI_PROVIDER": "gemini",
+		"GEMINI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta/openai",
+		"GEMINI_MODEL": "gemini-3.6-flash",
+		"GEMINI_REASONING_EFFORT": "low",
 		"HF_BASE_URL": "https://router.huggingface.co/v1",
 		"HF_MODEL": "meta-llama/Llama-3.1-8B-Instruct:novita",
 		"SYSTEM_PROMPT": "You are a helpful assistant. Reply in the same language as the user."
@@ -15,7 +19,6 @@
 		"required": [
 			"LINE_CHANNEL_SECRET",
 			"LINE_CHANNEL_ACCESS_TOKEN",
-			"HF_TOKEN",
 			"GITHUB_TOKEN"
 		]
 	},

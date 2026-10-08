@@ -6,7 +6,7 @@ import type { GitHubRepository, LineReply, RepoState } from "../types";
 import { errorMessage } from "../utils";
 import { isCapabilityQuestion } from "../utils/repository-question";
 import { GitHubApiError, GitHubService } from "./github.service";
-import { HuggingFaceService } from "./hugging-face.service";
+import { AiService } from "./ai.service";
 import { RepositoryStateService } from "./repository-state.service";
 
 const GITHUB_BRANCHES_PER_PAGE = 20;
@@ -16,7 +16,7 @@ const NO_REPOSITORIES = "GitHub token นี้ยังเข้าถึง re
 export class BotService {
   constructor(
     private readonly github: GitHubService,
-    private readonly ai: HuggingFaceService,
+    private readonly ai: AiService,
     private readonly repoState: RepositoryStateService,
   ) {}
 
@@ -161,13 +161,13 @@ export class BotService {
 
   private aiFailureReply(error: unknown): string | null {
     const message = errorMessage(error);
-    const status = message.match(/Hugging Face request failed \((\d+)\)/)?.[1];
+    const status = message.match(/AI provider request failed \((\d+)\)/)?.[1];
     if (!status) return null;
-    if (status === "402") {
-      return "AI API quota หมดหรือบัญชียังไม่พร้อมเรียกใช้งานครับ กรุณาเติมเครดิต/ตรวจ billing ของ Hugging Face แล้วลองใหม่ ส่วนคำตอบที่สรุปจากโค้ดโดยตรงยังใช้งานได้ตามปกติ";
+    if (status === "401" || status === "403") {
+      return "AI API key ใช้งานไม่ได้หรือไม่มีสิทธิ์ครับ กรุณาตรวจ key ของ provider ที่ตั้งใน AI_PROVIDER";
     }
     if (status === "429") {
-      return "AI API รับคำขอมากเกินไปชั่วคราวครับ กรุณารอสักครู่แล้วลองใหม่ โดย repo และ branch ที่เลือกไว้ยังไม่หาย";
+      return "AI provider มี quota เต็มหรือรับคำขอมากเกินไปชั่วคราวครับ กรุณารอสักครู่หรือตรวจ quota แล้วลองใหม่ โดย repo และ branch ที่เลือกไว้ยังไม่หาย";
     }
     return "AI API ตอบไม่สำเร็จชั่วคราวครับ กรุณาลองใหม่ โดย repo และ branch ที่เลือกไว้ยังไม่หาย";
   }

@@ -41,10 +41,10 @@ export class LineService {
 
   async reply(replyToken: string, reply: LineReply): Promise<void> {
     const messages: LineMessage[] = typeof reply === "string"
-      ? this.splitText(reply).map((text) => ({ type: "text", text }))
+      ? this.splitText(this.preventBareMarkdownAutoLinks(reply)).map((text) => ({ type: "text", text }))
       : Array.isArray(reply)
-        ? reply
-        : [reply];
+        ? reply.map((message) => this.sanitizeTextMessage(message))
+        : [this.sanitizeTextMessage(reply)];
 
     const response = await fetch(`${LINE_API_BASE_URL}/v2/bot/message/reply`, {
       method: "POST",
@@ -98,5 +98,18 @@ export class LineService {
       chunks.push(text.slice(index, index + LINE_TEXT_LIMIT));
     }
     return chunks.slice(0, LINE_MESSAGES_PER_REPLY_LIMIT);
+  }
+
+  private sanitizeTextMessage(message: LineMessage): LineMessage {
+    return message.type === "text"
+      ? { ...message, text: this.preventBareMarkdownAutoLinks(message.text) }
+      : message;
+  }
+
+  private preventBareMarkdownAutoLinks(text: string): string {
+    return text.replace(
+      /(^|[\s`'"([{])([a-z0-9_-]+)\.md\b/gim,
+      "$1$2\u2060.md",
+    );
   }
 }

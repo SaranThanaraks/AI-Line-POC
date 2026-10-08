@@ -1,4 +1,4 @@
-interface HuggingFaceCompletion {
+interface AiCompletion {
   choices?: Array<{
     finish_reason?: string | null;
     message?: { content?: string | null };
@@ -6,12 +6,14 @@ interface HuggingFaceCompletion {
 }
 
 const TRUNCATED_OUTPUT_MARKER = "[MODEL_OUTPUT_TRUNCATED]";
+const AI_FETCH_ATTEMPTS = 2;
 
-interface HuggingFaceConfig {
+export interface AiConfig {
   baseUrl: string;
   token: string;
   model: string;
   systemPrompt: string;
+  reasoningEffort?: "minimal" | "low" | "medium" | "high";
 }
 
 interface ChatMessage {
@@ -19,8 +21,8 @@ interface ChatMessage {
   content: string;
 }
 
-export class HuggingFaceService {
-  constructor(private readonly config: HuggingFaceConfig) {}
+export class AiService {
+  constructor(private readonly config: AiConfig) {}
 
   async answerDeveloperQuestion(userMessage: string): Promise<string> {
     return this.createLocalizedChatCompletion([
@@ -72,7 +74,7 @@ export class HuggingFaceService {
       },
     ];
 
-    const answer = await this.createChatCompletion(messages, 0.25, 520);
+    const answer = await this.createChatCompletion(messages, 0.25, 4_096);
     const issues = this.repositoryAnswerIssues(userMessage, answer, evidencePaths);
     if (issues.length === 0) return answer;
 
@@ -88,7 +90,7 @@ export class HuggingFaceService {
         ].join(" "),
       ),
       0.1,
-      500,
+      4_096,
     );
     const remainingIssues = this.repositoryAnswerIssues(
       userMessage,
@@ -173,8 +175,8 @@ export class HuggingFaceService {
       );
     }
 
-    if (answer.length > 2_000) {
-      issues.push("the answer is too long for LINE and must be under 2,000 characters");
+    if (answer.length > 4_500) {
+      issues.push("the answer is too long for one LINE message and must be under 4,500 characters");
     }
     if (answer.includes(TRUNCATED_OUTPUT_MARKER)) {
       issues.push("the model output was truncated and must be rewritten more concisely");
@@ -191,7 +193,7 @@ export class HuggingFaceService {
     if (normalizedListItems.some((item, index) => normalizedListItems.indexOf(item) !== index)) {
       issues.push("the answer repeats list items or conclusions");
     }
-    if (normalizedListItems.length > 9) {
+    if (normalizedListItems.length > 15) {
       issues.push("the answer contains too many list items for LINE");
     }
 
@@ -201,6 +203,12 @@ export class HuggingFaceService {
   private isCitationOptionalResponse(userMessage: string, answer: string): boolean {
     const message = userMessage.trim();
     if (/^(?:สวัสดี|หวัดดี|ดีครับ|ดีค่ะ|hello|hi|hey|ขอบคุณ|thanks?)[\s!.?]*$/i.test(message)) {
+      return true;
+    }
+    if (
+      /^(?:คุณ|บอท|bot|ai|assistant).{0,24}(?:คือใคร|เป็นใคร|ทำอะไรได้(?:บ้าง)?|ช่วยอะไรได้(?:บ้าง)?)[\s!.?？]*$/i.test(message) ||
+      /^(?:who are you|what can you do|how can you help)[\s!.?]*$/i.test(message)
+    ) {
       return true;
     }
     if (/(?:ช่วยเฉพาะ|ขออภัย.{0,40}(?:โปรเจกต์|ซอฟต์แวร์)|only help|outside.{0,20}scope|can(?:not|'t) help)/i.test(answer)) {
@@ -251,9 +259,10 @@ export class HuggingFaceService {
   private async createChatCompletion(
     messages: ChatMessage[],
     temperature = 0.7,
-    maxTokens = 1_024,
+    maxTokens = 4_096,
   ): Promise<string> {
-    const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+    const baseUrl = this.config.baseUrl.replace(/\/+$/, "");
+    const request: RequestInit = {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.config.token}`,
@@ -264,19 +273,42 @@ export class HuggingFaceService {
         messages,
         max_tokens: maxTokens,
         temperature,
+        ...(this.config.reasoningEffort
+          ? { reasoning_effort: this.config.reasoningEffort }
+          : {}),
       }),
-      signal: AbortSignal.timeout(45_000),
-    });
+    };
 
-    if (!response.ok) {
-      throw new Error(`Hugging Face request failed (${response.status})`);
+    let response: Response | undefined;
+    for (let attempt = 1; attempt <= AI_FETCH_ATTEMPTS; attempt += 1) {
+      try {
+        response = await fetch(`${baseUrl}/chat/completions`, {
+          ...request,
+          signal: AbortSignal.timeout(45_000),
+        });
+      } catch (error: unknown) {
+        if (attempt === AI_FETCH_ATTEMPTS) throw error;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+        continue;
+      }
+
+      if (response.ok) break;
+      const retryable = response.status === 429 || response.status >= 500;
+      if (!retryable || attempt === AI_FETCH_ATTEMPTS) {
+        throw new Error(`AI provider request failed (${response.status})`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, attempt * 250));
     }
 
-    const completion = (await response.json()) as HuggingFaceCompletion;
+    if (!response?.ok) {
+      throw new Error("AI provider request failed without a response");
+    }
+
+    const completion = (await response.json()) as AiCompletion;
     const choice = completion.choices?.[0];
     const content = choice?.message?.content;
     if (typeof content !== "string" || content.trim().length === 0) {
-      throw new Error("Hugging Face returned an empty response");
+      throw new Error("AI provider returned an empty response");
     }
     const normalized = content.trim();
     return choice?.finish_reason === "length"

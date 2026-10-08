@@ -1,9 +1,10 @@
 import { httpServerHandler } from "cloudflare:node";
 import { env, waitUntil } from "cloudflare:workers";
 import express, { type Request, type Response } from "express";
+import { resolveAiConfig } from "./ai-provider";
 import { BotService } from "./services/bot.service";
 import { GitHubService } from "./services/github.service";
-import { HuggingFaceService } from "./services/hugging-face.service";
+import { AiService } from "./services/ai.service";
 import { LineService } from "./services/line.service";
 import { RepositoryStateService } from "./services/repository-state.service";
 import type { AppEnv, LineWebhookBody, LineWebhookEvent } from "./types";
@@ -16,12 +17,7 @@ const lineService = new LineService(
 );
 const botService = new BotService(
   new GitHubService(bindings.GITHUB_TOKEN),
-  new HuggingFaceService({
-    baseUrl: bindings.HF_BASE_URL,
-    token: bindings.HF_TOKEN,
-    model: bindings.HF_MODEL,
-    systemPrompt: bindings.SYSTEM_PROMPT,
-  }),
+  new AiService(resolveAiConfig(bindings)),
   new RepositoryStateService(bindings.REPO_STATE),
 );
 

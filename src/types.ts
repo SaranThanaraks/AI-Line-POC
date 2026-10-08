@@ -1,5 +1,7 @@
 export type AppEnv = Cloudflare.Env & {
   GITHUB_TOKEN?: string;
+  GEMINI_API_KEY?: string;
+  HF_TOKEN?: string;
 };
 
 export interface LineWebhookBody {

@@ -272,7 +272,7 @@ export class GitHubService {
           if (/(^|\/)src\/index\.(?:ts|js|mjs)$/i.test(file.path)) score += 260;
           if (/(^|\/)bot\.service\.(?:ts|js)$/i.test(file.path)) score += 250;
           if (/(^|\/)(?:repository-state|line)\.service\.(?:ts|js)$/i.test(file.path)) score += 210;
-          if (/(^|\/)(?:github|hugging-face)\.service\.(?:ts|js)$/i.test(file.path)) score += 170;
+          if (/(^|\/)(?:github|ai)\.service\.(?:ts|js)$/i.test(file.path)) score += 170;
         }
         if (
           isAmbiguousComponentQuestion &&

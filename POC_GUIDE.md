@@ -4,7 +4,7 @@
 
 ## 1. เป้าหมายของ POC
 
-ระบบนี้เป็น **AI Developer Assistant บน LINE** ที่เชื่อมกับ GitHub repository เพื่อช่วยนักพัฒนาเข้าใจ ตรวจสอบ และปรับปรุงระบบ ผู้ใช้เลือก repository และ branch แล้วถามเกี่ยวกับ source code ได้ คำตอบสร้างด้วยโมเดลที่เรียกผ่าน Hugging Face OpenAI-compatible API และ backend ทำงานบน Cloudflare Workers ระบบรองรับบทสนทนาสั้นๆ และความรู้ด้าน software แต่ไม่ใช่ chatbot ทั่วไป
+ระบบนี้เป็น **AI Developer Assistant บน LINE** ที่เชื่อมกับ GitHub repository เพื่อช่วยนักพัฒนาเข้าใจ ตรวจสอบ และปรับปรุงระบบ ผู้ใช้เลือก repository และ branch แล้วถามเกี่ยวกับ source code ได้ คำตอบสร้างด้วย AI provider ที่เลือกผ่าน config โดยใช้ Gemini เป็นค่าเริ่มต้นและยังสลับกลับไปใช้ Hugging Face ได้ ส่วน backend ทำงานบน Cloudflare Workers ระบบรองรับบทสนทนาสั้นๆ และความรู้ด้าน software แต่ไม่ใช่ chatbot ทั่วไป
 
 ฟังก์ชันที่มีแล้ว:
 
@@ -37,7 +37,8 @@ src/index.ts
    |-- BotService: command routing และ orchestration
    |     |-- GitHubService: repositories, branches, tree, file contents
    |     |-- RepositoryStateService: selected repo/branch ใน KV
-   |     `-- HuggingFaceService: ส่ง context ไปยัง LLM
+   |     |-- resolveAiConfig: เลือก Gemini หรือ Hugging Face จาก AI_PROVIDER
+   |     `-- AiService: ส่ง context ไปยัง provider ที่เลือก
    `-- repository.presenter.ts: สร้าง Flex Message carousel
 ```
 
@@ -49,6 +50,7 @@ Webhook ตอบ HTTP `200` ทันทีหลังตรวจ signature �
 LineAI/
 ├── src/
 │   ├── index.ts                         # Express routes และประกอบ dependencies
+│   ├── ai-provider.ts                   # เลือก provider และแปลง environment เป็น AI config
 │   ├── types.ts                         # Shared domain/API types
 │   ├── utils.ts                         # Utility ที่ไม่ผูกกับ integration
 │   ├── presenters/
@@ -56,7 +58,7 @@ LineAI/
 │   └── services/
 │       ├── bot.service.ts               # Use cases, commands และ routing override
 │       ├── github.service.ts            # GitHub REST API และสร้าง repo context
-│       ├── hugging-face.service.ts       # LLM client, project scope และ safety prompt
+│       ├── ai.service.ts                 # AI client, project scope และ safety prompt
 │       ├── line.service.ts               # LINE Messaging API client
 │       └── repository-state.service.ts   # Cloudflare KV access
 ├── assets/
@@ -76,7 +78,7 @@ LineAI/
 - `index.ts` ไม่ควรมี business logic
 - API call ของผู้ให้บริการแต่ละรายต้องอยู่ใน service ของตัวเอง
 - `BotService` จัดการคำสั่งและเลือกเส้นทางจาก state: ถ้ามี selected repo ข้อความปกติจะอ่าน repo เสมอ ถ้าไม่มีก็ถาม AI แบบ software ทั่วไป
-- `HuggingFaceService` เป็นจุดเดียวที่กำหนด project scope, คำขอที่อนุญาต/ปฏิเสธ และกฎไม่เปิดเผย secret
+- `resolveAiConfig()` เลือก provider จาก `AI_PROVIDER`; `AiService` เป็นจุดเดียวที่กำหนด project scope, คำขอที่อนุญาต/ปฏิเสธ และกฎไม่เปิดเผย secret
 - รูปแบบข้อความ LINE ที่ยาวหรือซับซ้อนควรอยู่ใน `presenters`
 - secret ต้องมาจาก environment/Cloudflare secret เท่านั้น
 
@@ -89,7 +91,7 @@ LineAI/
 5. `GitHubService` โหลด branch, recursive tree และเลือกไฟล์จากคำถามปัจจุบันเท่านั้น ส่วนคำถามก่อนหน้าจะส่งให้โมเดลเป็นบริบทเสริมโดยไม่เปลี่ยนชุดไฟล์ของหัวข้อใหม่
 6. ระบบให้คะแนน path จากคำในคำถาม แล้วเลือกไม่เกิน 12 ไฟล์ โดยคำถามภาพรวม/วัตถุประสงค์จะให้น้ำหนัก `README`, manifest, entry point, route/controller และเอกสาร architecture มากขึ้น
 7. context รวมรายชื่อ path และเนื้อหาไฟล์ โดยจำกัดขนาดเพื่อไม่ให้ prompt ใหญ่เกินไป
-8. `HuggingFaceService` ส่งคำถามพร้อม scope prompt ไปยังโมเดล คำตอบเกี่ยวกับ repo ต้องอ้าง path ที่เป็นหลักฐาน แยกข้อเท็จจริงออกจากคำแนะนำ และห้ามแต่งข้อมูลที่ไม่มีใน context
+8. `AiService` ส่งคำถามพร้อม scope prompt ไปยัง AI provider ที่เลือก คำตอบเกี่ยวกับ repo ต้องอ้าง path ที่เป็นหลักฐาน แยกข้อเท็จจริงออกจากคำแนะนำ และห้ามแต่งข้อมูลที่ไม่มีใน context
 9. `LineService` แบ่งข้อความยาวตามข้อจำกัดของ LINE แล้ว reply
 
 ถ้าผู้ใช้ถามเป็นภาษาไทยแต่โมเดลตอบโดยไม่มีภาษาไทยหรือมีอักษรจีน/ญี่ปุ่น/เกาหลีปน ระบบจะ retry หนึ่งครั้งด้วยข้อกำหนดภาษาแบบเข้มงวด
@@ -105,7 +107,7 @@ LineAI/
 
 ### การทดสอบคุณภาพแบบหลาย agent
 
-raw transcript และผล judge อยู่ใน `artifacts/evals/` รอบทดสอบจะให้ tester ยิงคำถามผ่าน `BotService` จริงกับ GitHub/Hugging Face แล้วให้ judge อีก agent ตรวจคำตอบกับ source code โดยไม่แก้โค้ด เกณฑ์ final คือทุกข้ออย่างน้อย 26/30 และต้องไม่มี hallucination, invalid citation, fallback หรือ routing ผิด ดู rubric และประวัติรอบได้ใน `artifacts/evals/README.md`
+raw transcript และผล judge อยู่ใน `artifacts/evals/` รอบทดสอบจะให้ tester ยิงคำถามผ่าน `BotService` จริงกับ GitHub และ AI provider ที่ตั้งไว้ แล้วให้ judge อีก agent ตรวจคำตอบกับ source code โดยไม่แก้โค้ด เกณฑ์ final คือทุกข้ออย่างน้อย 26/30 และต้องไม่มี hallucination, invalid citation, fallback หรือ routing ผิด ดู rubric และประวัติรอบได้ใน `artifacts/evals/README.md`
 
 กฎ routing สนทนามีเพียง:
 
@@ -134,6 +136,13 @@ LINE_CHANNEL_ID=...
 LINE_CHANNEL_SECRET=...
 LINE_CHANNEL_ACCESS_TOKEN=...
 
+AI_PROVIDER=gemini
+
+GEMINI_API_KEY=...
+GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+GEMINI_MODEL=gemini-3.6-flash
+GEMINI_REASONING_EFFORT=low
+
 HF_TOKEN=hf_...
 HF_BASE_URL=https://router.huggingface.co/v1
 HF_MODEL=meta-llama/Llama-3.1-8B-Instruct:novita
@@ -154,15 +163,20 @@ GITHUB_TOKEN=github_pat_...
 | `LINE_CHANNEL_ID` | ไม่ใช่ secret | LINE Developers Console → เลือก Provider และ Messaging API channel → **Basic settings** → Channel ID ปัจจุบันเก็บไว้เป็นข้อมูลอ้างอิง แต่ Worker ยังไม่ได้อ่านค่านี้โดยตรง |
 | `LINE_CHANNEL_SECRET` | ใช่ | LINE Developers Console → Messaging API channel → **Basic settings** → Channel secret ใช้ตรวจ HMAC signature ว่า webhook มาจาก LINE จริง ผู้ใช้ต้องมีสิทธิ์ที่มองเห็น secret ได้ |
 | `LINE_CHANNEL_ACCESS_TOKEN` | ใช่ | LINE Developers Console → Messaging API channel → **Messaging API** → Channel access token ใช้เรียก reply, loading animation และ Rich Menu API |
-| `HF_TOKEN` | ใช่ | [Hugging Face Settings → Access Tokens](https://huggingface.co/settings/tokens) → สร้าง token สำหรับแอปนี้ และให้สิทธิ์ **Make calls to Inference Providers** ใช้เป็น Bearer token เรียก AI API |
-| `HF_BASE_URL` | ไม่ใช่ secret | URL ของ AI API ปัจจุบันคือ Hugging Face Router `https://router.huggingface.co/v1` ซึ่งรองรับรูปแบบ OpenAI-compatible |
-| `HF_MODEL` | ไม่ใช่ secret | Model ID ที่ Hugging Face Inference Providers รองรับ รูปแบบอาจมี provider ต่อท้าย เช่น `model-name:novita` ดู model/provider ที่พร้อมใช้งานจาก Hugging Face Inference Providers |
+| `AI_PROVIDER` | ไม่ใช่ secret | เลือก `gemini` หรือ `huggingface`; ถ้าไม่กำหนดจะใช้ `gemini` |
+| `GEMINI_API_KEY` | ใช่ | [Google AI Studio → API Keys](https://aistudio.google.com/api-keys) → สร้าง key สำหรับโปรเจกต์นี้และจำกัดสิทธิ์ให้ใช้ Gemini API เท่านั้น ใช้เป็น Bearer token เรียก Gemini API |
+| `GEMINI_BASE_URL` | ไม่ใช่ secret | OpenAI-compatible endpoint ของ Gemini: `https://generativelanguage.googleapis.com/v1beta/openai` |
+| `GEMINI_MODEL` | ไม่ใช่ secret | Model ID ของ Gemini ที่ส่งใน Chat Completions ปัจจุบันตั้งเป็น `gemini-3.6-flash` |
+| `GEMINI_REASONING_EFFORT` | ไม่ใช่ secret | ระดับ thinking ของ Gemini (`minimal`, `low`, `medium`, `high`) ค่าเริ่มต้นของ POC คือ `low` เพื่อลด latency และไม่ให้ thinking ใช้ output-token budget จนคำตอบถูกตัด |
+| `HF_TOKEN` | ใช่ | [Hugging Face → Access Tokens](https://huggingface.co/settings/tokens) → สร้าง fine-grained token ที่มีสิทธิ์เรียก Inference Providers |
+| `HF_BASE_URL` | ไม่ใช่ secret | OpenAI-compatible router ของ Hugging Face: `https://router.huggingface.co/v1` |
+| `HF_MODEL` | ไม่ใช่ secret | Model/provider route ที่ส่งใน Chat Completions ปัจจุบันตั้งเป็น `meta-llama/Llama-3.1-8B-Instruct:novita` |
 | `SYSTEM_PROMPT` | ไม่ใช่ secret | ข้อกำหนดพฤติกรรมของ AI ที่ทีมเขียนเอง ไม่ได้เอามาจาก dashboard ใด |
 | `PORT` | ไม่ใช่ secret | ค่า port สำหรับ local tooling เดิม ปัจจุบัน Worker ใช้ port ภายในจาก `src/index.ts` และ Wrangler เปิด dev server ที่ `8787` ดังนั้นตัวแปรนี้ยังไม่ถูกใช้งานโดย runtime |
 | `NGROK_AUTHTOKEN` | ใช่ | [ngrok Dashboard → Your Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) ใช้เฉพาะเมื่อรันผ่าน ngrok รุ่นก่อนย้ายไป Cloudflare Workers ปัจจุบัน Worker ไม่ได้ใช้ค่านี้ |
 | `GITHUB_TOKEN` | ใช่ | [GitHub Settings → Fine-grained personal access tokens](https://github.com/settings/personal-access-tokens) ใช้อ่านรายชื่อ repo, branches, tree และ file contents |
 
-เอกสารอ้างอิง: [LINE channel secret](https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/), [LINE channel access token](https://developers.line.biz/en/docs/basics/channel-access-token/), [Hugging Face access tokens](https://huggingface.co/docs/hub/security-tokens), [Hugging Face Chat Completion](https://huggingface.co/docs/inference-providers/tasks/chat-completion) และ [GitHub fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+เอกสารอ้างอิง: [LINE channel secret](https://developers.line.biz/en/docs/messaging-api/verify-webhook-signature/), [LINE channel access token](https://developers.line.biz/en/docs/basics/channel-access-token/), [Gemini API keys](https://ai.google.dev/gemini-api/docs/api-key), [Gemini OpenAI compatibility](https://ai.google.dev/gemini-api/docs/openai), [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers/index) และ [GitHub fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
 ### LINE credentials
 
@@ -170,48 +184,28 @@ GITHUB_TOKEN=github_pat_...
 - `LINE_CHANNEL_ACCESS_TOKEN` มีไว้ยืนยันสิทธิ์ตอน Worker เรียก Messaging API ขาออก
 - หาก reissue ค่าใด ต้องอัปเดตทั้ง `.env` สำหรับ local และ Cloudflare Worker secret สำหรับ production
 
-### Hugging Face และ AI API
+### AI provider: Gemini หรือ Hugging Face
 
-โค้ดปัจจุบันใช้ Hugging Face เป็น **AI API provider** ไม่ใช่ส่วนที่ผูกตายกับ LINE หรือ GitHub โดย `HuggingFaceService` ส่ง request แบบ OpenAI-compatible ไปที่:
+`AI_PROVIDER` เป็น config switch โดยรองรับสองค่า:
+
+- `gemini` — ค่าเริ่มต้น ใช้ `GEMINI_API_KEY`, `GEMINI_BASE_URL` และ `GEMINI_MODEL`
+- `huggingface` — ใช้ `HF_TOKEN`, `HF_BASE_URL` และ `HF_MODEL`
+
+ทั้งสอง provider ใช้ request รูปแบบ OpenAI-compatible ผ่าน `AiService` เหมือนกัน จึงสลับ provider ได้โดยไม่แก้ business logic:
 
 ```text
-POST {HF_BASE_URL}/chat/completions
-Authorization: Bearer {HF_TOKEN}
-Model: {HF_MODEL}
+POST {GEMINI_BASE_URL}/chat/completions
+Authorization: Bearer {GEMINI_API_KEY}
+Model: {GEMINI_MODEL}
 ```
 
-สร้าง Hugging Face token จากหน้า [Access Tokens](https://huggingface.co/settings/tokens) โดยสร้าง token แยกสำหรับแอปนี้และให้สิทธิ์ `Make calls to Inference Providers` จากนั้นตั้ง model และ base URL ใน `.env` สำหรับ local และ `wrangler.jsonc`/Worker secret สำหรับ production Hugging Face ระบุว่า Router รองรับ OpenAI-compatible Chat Completion จึงสลับ provider ได้ง่าย
+สร้าง key จาก [Google AI Studio](https://aistudio.google.com/api-keys) และจำกัด key ให้ใช้ Gemini API เท่านั้น ห้าม commit หรือส่ง key ผ่านแชต สำหรับ local ให้ใส่ใน `.env`; สำหรับ production ให้อัปโหลดแบบ interactive ด้วย `npx wrangler secret put GEMINI_API_KEY` Google ระบุว่า client สามารถใช้ `GEMINI_API_KEY` และ OpenAI-compatible endpoint ข้างต้นได้โดยตรง
 
-#### ใช้ API key ของ AI เจ้าอื่นแทน Hugging Face
+Gemini 3.x ใช้ thinking tokens ซึ่งนับรวมใน `max_tokens` ด้วย ระบบจึงส่ง `reasoning_effort` จาก `GEMINI_REASONING_EFFORT` และตั้ง output budget ให้เพียงพอ ปัจจุบันใช้ `low` เพื่อสมดุลคุณภาพกับเวลาตอบสำหรับ LINE
 
-ถ้า AI provider อื่นรองรับ OpenAI-compatible `POST /v1/chat/completions` สามารถแทน Hugging Face ได้ เช่น OpenAI-compatible gateway, OpenRouter, Groq, Together หรือ local gateway อย่าง Ollama โดยต้องเปลี่ยน 3 ค่า:
+Hugging Face ใช้รูปแบบเดียวกันโดยแทนค่าด้วย `HF_BASE_URL`, `HF_TOKEN` และ `HF_MODEL` การสลับ local ทำได้โดยแก้บรรทัดเดียวเป็น `AI_PROVIDER=huggingface`; production แก้ `AI_PROVIDER` ใน `wrangler.jsonc` แล้ว deploy ใหม่
 
-```env
-# ตัวอย่างเชิงโครงสร้าง ต้องใช้ค่าจริงตามเอกสารของ provider ที่เลือก
-HF_TOKEN=api_key_from_another_ai_provider
-HF_BASE_URL=https://provider.example.com/v1
-HF_MODEL=provider-model-name
-```
-
-วิธีข้างบนเร็วที่สุดสำหรับ POC และไม่ต้องแก้โค้ด เพราะ service ใช้ Bearer token กับ Chat Completions อยู่แล้ว แต่ชื่อ `HF_*` จะทำให้สับสน สำหรับการต่อยอดจริงควร refactor เป็นชื่อกลาง:
-
-```env
-AI_API_KEY=...
-AI_BASE_URL=https://provider.example.com/v1
-AI_MODEL=provider-model-name
-```
-
-แล้วเปลี่ยนพร้อมกันใน:
-
-1. `.env` และ `.env.example`
-2. `wrangler.jsonc`
-3. `src/index.ts`
-4. `src/services/hugging-face.service.ts` โดยเปลี่ยนชื่อเป็น `ai.service.ts` หรือ `openai-compatible.service.ts`
-5. Cloudflare secret ด้วย `npx wrangler secret put AI_API_KEY`
-
-ถ้า provider ไม่รองรับ OpenAI-compatible Chat Completions ห้ามเปลี่ยนเฉพาะ API key เพราะ request/response schema อาจไม่เหมือนกัน ให้สร้าง adapter service ใหม่ที่แปลง request และ response ของ provider นั้น แต่คง public method เป็น `answerRepositoryQuestion()` เพื่อให้ `BotService` ไม่ต้องเปลี่ยน
-
-ไม่ว่าจะใช้ provider ใด ต้องตรวจราคา, rate limit, context window, data retention และนโยบายการส่ง private source code ก่อนใช้งานจริง
+ก่อนใช้ private repository ใน production ต้องตรวจราคา, rate limit, context window, data retention และนโยบายการส่ง source code ของ provider ที่เลือกให้เหมาะกับองค์กร
 
 ### GitHub fine-grained token
 
@@ -270,9 +264,12 @@ npm run check
 ```bash
 npx wrangler secret put LINE_CHANNEL_SECRET
 npx wrangler secret put LINE_CHANNEL_ACCESS_TOKEN
+npx wrangler secret put GEMINI_API_KEY
 npx wrangler secret put HF_TOKEN
 npx wrangler secret put GITHUB_TOKEN
 ```
+
+หากใช้เพียง provider เดียว อัปโหลดเฉพาะ secret ของ provider ที่เลือกได้ แต่การอัปโหลดทั้ง `GEMINI_API_KEY` และ `HF_TOKEN` ทำให้สลับ `AI_PROVIDER` แล้ว deploy ได้ทันทีโดยไม่ต้องตั้ง secret ใหม่
 
 Deploy:
 
@@ -372,7 +369,7 @@ Webhook route รองรับ `POST` เท่านั้น การเป
 3. ปิด Auto-reply messages หากไม่ต้องการข้อความซ้ำ
 4. Secret ใน Cloudflare ตรงกับ channel ปัจจุบัน
 5. ดู Worker logs ด้วย `npx wrangler tail`
-6. ตรวจ quota/error ของ Hugging Face และ GitHub
+6. ตรวจ quota/error ของ AI provider ที่เลือกและ GitHub
 
 ### เห็นเฉพาะ public repositories
 
@@ -394,7 +391,7 @@ Webhook route รองรับ `POST` เท่านั้น การเป
 
 ### เปลี่ยนโมเดลหรือ provider
 
-ดูขั้นตอนเต็มในหัวข้อ **Hugging Face และ AI API** หาก provider ใหม่รองรับ OpenAI-compatible Chat Completions สามารถเปลี่ยน API key, base URL และ model ได้ หาก schema ไม่ compatible ให้สร้าง implementation ใหม่โดยรักษา method `answerRepositoryQuestion()` เพื่อไม่ให้ `BotService` ต้องรู้รายละเอียด API
+เปลี่ยน `AI_PROVIDER` เป็น `gemini` หรือ `huggingface` แล้ว deploy ใหม่ การเพิ่ม provider รายที่สามให้เพิ่ม mapping ใน `src/ai-provider.ts` โดยรักษา interface ของ `AiService` เพื่อไม่ให้ `BotService` ต้องรู้รายละเอียด API
 
 ## 13. Checklist ก่อนส่งมอบ
 
@@ -425,10 +422,11 @@ npm run deploy
 จุดแก้หลัก:
 
 - HTTP route/webhook lifecycle → `src/index.ts`
+- Provider selection/environment mapping → `src/ai-provider.ts`
 - Commands, overrides และ conversational flow → `src/services/bot.service.ts`
-- Project scope, safety policy และ model call → `src/services/hugging-face.service.ts`
+- Project scope, safety policy และ model call → `src/services/ai.service.ts`
 - GitHub API/file selection → `src/services/github.service.ts`
-- Prompt/model call → `src/services/hugging-face.service.ts`
+- Prompt/model call → `src/services/ai.service.ts`
 - LINE API/signature/message splitting → `src/services/line.service.ts`
 - KV state → `src/services/repository-state.service.ts`
 - Flex Message → `src/presenters/repository.presenter.ts`

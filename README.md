@@ -1,8 +1,8 @@
 # LINE AI Worker
 
 Express webhook running on Cloudflare Workers. It verifies LINE signatures,
-calls the Hugging Face OpenAI-compatible router, and replies through the LINE
-Messaging API. Each LINE conversation can select a GitHub repository and branch;
+calls a configurable AI provider (Gemini by default, with Hugging Face available),
+and replies through the LINE Messaging API. Each LINE conversation can select a GitHub repository and branch;
 the Worker stores that selection in Cloudflare KV and supplies relevant source
 files to the model.
 
@@ -14,7 +14,8 @@ files to the model.
 ```text
 LINE webhook -> Express route -> LINE service -> Bot service
                                             |-> GitHub service
-                                            |-> Hugging Face service
+                                            |-> AI provider resolver
+                                            |-> AI service (Gemini / Hugging Face)
                                             `-> Cloudflare KV state
 ```
 
@@ -29,10 +30,28 @@ Keep these values in `.env`. Never commit or share this file:
 ```env
 LINE_CHANNEL_SECRET=...
 LINE_CHANNEL_ACCESS_TOKEN=...
+AI_PROVIDER=gemini
+
+GEMINI_API_KEY=...
+GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+GEMINI_MODEL=gemini-3.6-flash
+GEMINI_REASONING_EFFORT=low
+
 HF_TOKEN=hf_...
+HF_BASE_URL=https://router.huggingface.co/v1
+HF_MODEL=meta-llama/Llama-3.1-8B-Instruct:novita
+
 # Optional for private repositories:
 GITHUB_TOKEN=github_pat_...
 ```
+
+Set `AI_PROVIDER=gemini` (the default) or `AI_PROVIDER=huggingface`. Only the
+selected provider's API key is required at runtime, but keeping both keys in the
+local `.env` makes switching a one-line config change.
+
+Gemini 3.x uses thinking tokens. Keep `GEMINI_REASONING_EFFORT=low` for this
+interactive LINE use case so reasoning does not consume a small output budget
+before the visible answer is produced.
 
 Install dependencies and start Wrangler:
 
@@ -62,8 +81,13 @@ Upload production secrets interactively. Do not put the values in commands:
 ```bash
 npx wrangler secret put LINE_CHANNEL_SECRET
 npx wrangler secret put LINE_CHANNEL_ACCESS_TOKEN
+npx wrangler secret put GEMINI_API_KEY
 npx wrangler secret put HF_TOKEN
 ```
+
+Upload both AI secrets if you want to switch providers without another secret
+setup step. Otherwise, uploading only the selected provider's secret is enough.
+The production default is controlled by `AI_PROVIDER` in `wrangler.jsonc`.
 
 Public GitHub repositories do not need a token. For private repositories,
 create a fine-grained GitHub token limited to the selected repositories with

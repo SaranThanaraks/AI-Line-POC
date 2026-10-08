@@ -12,7 +12,7 @@ const files: GitHubTreeItem[] = [
   "src/presenters/repository.presenter.ts",
   "src/services/bot.service.ts",
   "src/services/github.service.ts",
-  "src/services/hugging-face.service.ts",
+  "src/services/ai.service.ts",
   "src/services/line.service.ts",
   "src/services/repository-state.service.ts",
   "src/utils.ts",

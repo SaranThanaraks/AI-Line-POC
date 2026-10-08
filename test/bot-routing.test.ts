@@ -125,15 +125,15 @@ test("AI quota errors return an actionable LINE reply", async () => {
     {} as never,
     {
       answerDeveloperQuestion: async () => {
-        throw new Error("Hugging Face request failed (402)");
+        throw new Error("AI provider request failed (403)");
       },
     } as never,
     { get: async () => null } as never,
   );
 
   const answer = await bot.createReply("JWT คืออะไร", "line-user");
-  assert.match(answer as string, /AI API quota/);
-  assert.match(answer as string, /Hugging Face/);
+  assert.match(answer as string, /AI API key/);
+  assert.match(answer as string, /AI_PROVIDER/);
 });
 
 test("repository AI quota errors return an actionable LINE reply", async () => {
@@ -141,7 +141,7 @@ test("repository AI quota errors return an actionable LINE reply", async () => {
     { buildRepositoryContext: async () => "context" } as never,
     {
       answerRepositoryQuestion: async () => {
-        throw new Error("Hugging Face request failed (429)");
+        throw new Error("AI provider request failed (429)");
       },
     } as never,
     { get: async () => initialState, put: async () => undefined } as never,

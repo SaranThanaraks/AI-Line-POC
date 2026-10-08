@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { HuggingFaceService } from "../src/services/hugging-face.service";
+import { AiService } from "../src/services/ai.service";
 
 const config = {
   baseUrl: "https://example.test/v1",
@@ -20,6 +20,40 @@ const repositoryContext = [
   "export default {};",
 ].join("\n");
 
+test("Gemini OpenAI-compatible endpoint uses a Bearer API key", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestUrl = "";
+  let authorization = "";
+  let requestBody: { reasoning_effort?: string; max_tokens?: number } = {};
+  globalThis.fetch = (async (input, init) => {
+    requestUrl = String(input);
+    authorization = new Headers(init?.headers).get("authorization") ?? "";
+    requestBody = JSON.parse(String(init?.body));
+    return Response.json({ choices: [{ message: { content: "API explanation" } }] });
+  }) as typeof fetch;
+
+  try {
+    const service = new AiService({
+      ...config,
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      token: "gemini-test-key",
+      model: "gemini-3.6-flash",
+      reasoningEffort: "low",
+    });
+    await service.answerDeveloperQuestion("Explain this API");
+
+    assert.equal(
+      requestUrl,
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    );
+    assert.equal(authorization, "Bearer gemini-test-key");
+    assert.equal(requestBody.reasoning_effort, "low");
+    assert.equal(requestBody.max_tokens, 4_096);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("general questions use one strict software-scope prompt", async () => {
   const originalFetch = globalThis.fetch;
   let requestBody: {
@@ -31,7 +65,7 @@ test("general questions use one strict software-scope prompt", async () => {
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config)
+    const answer = await new AiService(config)
       .answerDeveloperQuestion("JWT คืออะไร");
 
     assert.equal(answer, "JWT คือมาตรฐาน token ครับ");
@@ -60,7 +94,7 @@ test("repository questions always call the model without category templates", as
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+    const answer = await new AiService(config).answerRepositoryQuestion(
       "มีฟีเจอร์อะไรบ้าง",
       repositoryContext,
     );
@@ -89,11 +123,37 @@ test("repository greeting needs no path citation and is not retried", async () =
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+    const answer = await new AiService(config).answerRepositoryQuestion(
       "สวัสดี",
       repositoryContext,
     );
     assert.match(answer, /สวัสดี/);
+    assert.equal(calls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("repository assistant identity needs no path citation and is not retried", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    return Response.json({
+      choices: [{
+        message: {
+          content: "ผมคือผู้ช่วยนักพัฒนาสำหรับอธิบายและวิเคราะห์โปรเจกต์ที่คุณเลือกครับ",
+        },
+      }],
+    });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "คุณคือใคร",
+      repositoryContext,
+    );
+    assert.match(answer, /ผู้ช่วยนักพัฒนา/);
     assert.equal(calls, 1);
   } finally {
     globalThis.fetch = originalFetch;
@@ -109,7 +169,7 @@ test("repository scope refusal needs no path citation and is not retried", async
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+    const answer = await new AiService(config).answerRepositoryQuestion(
       "พรุ่งนี้ฝนตกไหม",
       repositoryContext,
     );
@@ -135,13 +195,37 @@ test("repository answers retry when they cite a path outside the evidence", asyn
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+    const answer = await new AiService(config).answerRepositoryQuestion(
       "Where is the entry point?",
       repositoryContext,
     );
     assert.equal(answer, "The entry point is `src/index.ts`.");
     assert.equal(calls, 2);
     assert.deepEqual(temperatures, [0.25, 0.1]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("AI requests retry one transient provider failure", async () => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    return calls === 1
+      ? new Response(null, { status: 503 })
+      : Response.json({
+          choices: [{ message: { content: "อธิบายจาก `README.md` ครับ" } }],
+        });
+  }) as typeof fetch;
+
+  try {
+    const answer = await new AiService(config).answerRepositoryQuestion(
+      "โปรเจกต์นี้ทำอะไร",
+      repositoryContext,
+    );
+    assert.match(answer, /README\.md/);
+    assert.equal(calls, 2);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -159,7 +243,7 @@ test("repository factual answers retry when they omit evidence paths", async () 
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+    const answer = await new AiService(config).answerRepositoryQuestion(
       "โปรเจกต์นี้ทำอะไร",
       repositoryContext,
     );
@@ -181,7 +265,7 @@ test("grounded security reviews up to 2,000 characters are accepted", async () =
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+    const answer = await new AiService(config).answerRepositoryQuestion(
       "โปรเจกต์นี้มีความเสี่ยง security อย่างไร",
       repositoryContext,
     );
@@ -207,7 +291,7 @@ test("Thai general answers containing CJK characters are retried once", async ()
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config)
+    const answer = await new AiService(config)
       .answerDeveloperQuestion("Service คืออะไร");
     assert.equal(answer, "Service นี้แยกการทำงานออกจากระบบหลัก");
     assert.deepEqual(temperatures, [0.7, 0.3]);
@@ -230,7 +314,7 @@ test("truncated repository output is corrected once", async () => {
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+    const answer = await new AiService(config).answerRepositoryQuestion(
       "Summarize the project",
       repositoryContext,
     );
@@ -250,7 +334,7 @@ test("two invalid repository answers return a safe fallback without a third call
   }) as typeof fetch;
 
   try {
-    const answer = await new HuggingFaceService(config).answerRepositoryQuestion(
+    const answer = await new AiService(config).answerRepositoryQuestion(
       "Explain the missing file",
       repositoryContext,
     );
